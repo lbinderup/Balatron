@@ -1,0 +1,41 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v6.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v6.0": {
+      "Balatron/1.0.0": {
+        "dependencies": {
+          "MoonSharp.StaticGlue.Interpreter": "2.0.0-beta-2021-03-30-f19fbff"
+        },
+        "runtime": {
+          "Balatron.dll": {}
+        }
+      },
+      "MoonSharp.StaticGlue.Interpreter/2.0.0-beta-2021-03-30-f19fbff": {
+        "runtime": {
+          "lib/netstandard2.0/MoonSharp.StaticGlue.Interpreter.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Balatron/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "MoonSharp.StaticGlue.Interpreter/2.0.0-beta-2021-03-30-f19fbff": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-O8k+CWdySPaEIkvU33nJlvAgEc5DZjDVCV7D3Po99rjnntPlNl1p7K+1ItYbHyCHYcGz0+2uDa3LNKpt21/ZTQ==",
+      "path": "moonsharp.staticglue.interpreter/2.0.0-beta-2021-03-30-f19fbff",
+      "hashPath": "moonsharp.staticglue.interpreter.2.0.0-beta-2021-03-30-f19fbff.nupkg.sha512"
+    }
+  }
+}

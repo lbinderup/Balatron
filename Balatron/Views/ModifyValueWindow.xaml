@@ -1,0 +1,18 @@
+<Window x:Class="Balatron.Views.ModifyValueWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Modify Value" Height="150" Width="300" WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Name="AddressLabel" FontWeight="Bold" Grid.Row="0" TextWrapping="Wrap"/>
+        <TextBox Name="ValueTextBox" Grid.Row="1" Margin="0,10,0,10"/>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="OK" Width="75" Margin="0,0,10,0" Click="OkButton_Click"/>
+            <Button Content="Cancel" Width="75" Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
