@@ -6,7 +6,7 @@ namespace Balatron.Services
 {
     public static class LuaParser
     {
-        // Parses a Lua text file (which starts with "return") into a LuaNode tree.
+        // Parses a Lua string (which starts with "return") into a LuaNode tree.
         public static LuaNode Parse(string text)
         {
             // Initialize the MoonSharp interpreter

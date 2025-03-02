@@ -8,7 +8,10 @@ namespace Balatron.Views
 {
     public partial class EditorView : Window
     {
+        private LuaNode _rootNode;
         private LuaNode _selectedNode;
+        // Adjust this path as needed.
+        private readonly string _tempFilePath = Path.Combine(Path.GetTempPath(), "save.txt");
 
         public EditorView()
         {
@@ -18,14 +21,11 @@ namespace Balatron.Views
 
         private void LoadAndParseLuaFile()
         {
-            // Replace with your actual temporary file path.
-            string tempFilePath = Path.Combine(Path.GetTempPath(), "save.txt");
-
-            if (File.Exists(tempFilePath))
+            if (File.Exists(_tempFilePath))
             {
-                string luaText = File.ReadAllText(tempFilePath, Encoding.ASCII);
-                LuaNode rootNode = LuaParser.Parse(luaText);
-                LuaTreeView.ItemsSource = rootNode.Children;
+                string luaText = File.ReadAllText(_tempFilePath, Encoding.ASCII);
+                _rootNode = LuaParser.Parse(luaText);
+                LuaTreeView.ItemsSource = _rootNode.Children;
             }
             else
             {
@@ -48,9 +48,9 @@ namespace Balatron.Views
             }
         }
 
-        private string GetAddress(LuaNode node)
+        private static string GetAddress(LuaNode node)
         {
-            string address = node.Key;
+            var address = node.Key;
             var current = node.Parent;
             while (current != null && current.Key != "Root")
             {
@@ -62,14 +62,17 @@ namespace Balatron.Views
 
         private void ModifyValueButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_selectedNode != null && _selectedNode.IsLeaf)
-            {
-                var modifyWindow = new ModifyValueWindow(GetAddress(_selectedNode), _selectedNode.Value);
-                if (modifyWindow.ShowDialog() == true)
-                {
-                    _selectedNode.Value = modifyWindow.NewValue;
-                }
-            }
+            if (_selectedNode is not { IsLeaf: true })
+                return;
+            
+            var modifyWindow = new ModifyValueWindow(GetAddress(_selectedNode), _selectedNode.Value);
+            if (modifyWindow.ShowDialog() != true)
+                return;
+            
+            _selectedNode.Value = modifyWindow.NewValue;
+            // Re-serialize the entire tree with the updated value.
+            var newLuaText = LuaSerializer.Serialize(_rootNode);
+            File.WriteAllText(_tempFilePath, newLuaText, Encoding.ASCII);
         }
     }
 }
