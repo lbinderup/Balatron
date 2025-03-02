@@ -10,6 +10,8 @@ namespace Balatron.Models
         public LuaNode Parent { get; set; }
         public ObservableCollection<LuaNode> Children { get; } = new ObservableCollection<LuaNode>();
 
+        public bool IsTable { get; set; } = false;
+
         public string Value
         {
             get => _value;
@@ -23,7 +25,7 @@ namespace Balatron.Models
             }
         }
 
-        public bool IsLeaf => Children.Count == 0;
+        public bool IsLeaf => Children.Count == 0 && !IsTable;
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string propertyName) =>

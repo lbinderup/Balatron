@@ -5,7 +5,7 @@ namespace Balatron.Services
 {
     public static class LuaSerializer
     {
-        // Serializes the LuaNode tree (ignoring the dummy "Root" node) into a Lua table string.
+        // Serializes the LuaNode tree (ignoring the dummy "Root" node) into a compact Lua table string.
         public static string Serialize(LuaNode root, bool readable = false)
         {
             var sb = new StringBuilder();
@@ -26,27 +26,37 @@ namespace Balatron.Services
                 else
                     first = false;
                 
-                sb.Append("[\"");
-                sb.Append(EscapeString(node.Key));
-                sb.Append("\"]=");
+                // Write key: if numeric, output without quotes; otherwise, escape and quote.
+                sb.Append("[");
+                if (double.TryParse(node.Key, out _))
+                    sb.Append(node.Key);
+                else
+                {
+                    sb.Append("\"");
+                    sb.Append(node.Key);
+                    sb.Append("\"");
+                }
+                sb.Append("]=");
+                
                 if (node.Children.Count > 0)
                 {
                     sb.Append(SerializeNodes(node.Children));
                 }
                 else
                 {
-                    if (double.TryParse(node.Value, out _) || node.Value == "true" || node.Value == "false")
+                    if (node.IsTable)
                     {
-                        sb.Append(node.Value);
+                        sb.Append("{}");
                     }
                     else
                     {
-                        sb.Append("\"");
-                        sb.Append(EscapeString(node.Value));
-                        sb.Append("\"");
+                        sb.Append(node.Value);
                     }
                 }
             }
+            // Add trailing comma if any element was written.
+            if (!first)
+                sb.Append(",");
             sb.Append("}");
             return sb.ToString();
         }
@@ -56,39 +66,47 @@ namespace Balatron.Services
             var sb = new StringBuilder();
             string indentStr = new string(' ', indent * 2);
             sb.Append("{\n");
+            bool first = true;
             foreach (var node in nodes)
             {
+                if (!first)
+                    sb.Append(",\n");
+                else
+                    first = false;
                 sb.Append(indentStr);
-                sb.Append("  [\"");
-                sb.Append(EscapeString(node.Key));
-                sb.Append("\"]=");
+                sb.Append("  [");
+                if (double.TryParse(node.Key, out _))
+                    sb.Append(node.Key);
+                else
+                {
+                    sb.Append("\"");
+                    sb.Append(node.Key);
+                    sb.Append("\"");
+                }
+                sb.Append("]=");
                 if (node.Children.Count > 0)
                 {
                     sb.Append(SerializeNodesReadable(node.Children, indent + 1));
                 }
                 else
                 {
-                    if (double.TryParse(node.Value, out _) || node.Value == "true" || node.Value == "false")
+                    if (node.IsTable)
                     {
-                        sb.Append(node.Value);
+                        sb.Append("{}");
                     }
                     else
                     {
-                        sb.Append("\"");
-                        sb.Append(EscapeString(node.Value));
-                        sb.Append("\"");
+                        sb.Append(node.Value);
                     }
                 }
-                sb.Append(",\n");
             }
-            sb.Append(indentStr);
+            if (!first)
+            {
+                sb.Append(",\n");
+                sb.Append(indentStr);
+            }
             sb.Append("}");
             return sb.ToString();
-        }
-        
-        private static string EscapeString(string input)
-        {
-            return input?.Replace("\"", "\\\"") ?? "";
         }
     }
 }

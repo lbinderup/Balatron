@@ -1,53 +1,124 @@
 using System;
 using Balatron.Models;
-using MoonSharp.Interpreter;
 
 namespace Balatron.Services
 {
     public static class LuaParser
     {
-        // Parses a Lua string (which starts with "return") into a LuaNode tree.
         public static LuaNode Parse(string text)
         {
-            // Initialize the MoonSharp interpreter
-            Script script = new Script();
-            // Execute the Lua script; the file should begin with "return { ... }"
-            DynValue ret = script.DoString(text);
-            if (ret.Type != DataType.Table)
-                throw new Exception("Lua file did not return a table.");
-
-            Table luaTable = ret.Table;
-            // Create a dummy root node and convert the Lua table into our tree
-            LuaNode root = new LuaNode { Key = "Root" };
-            ConvertTable(luaTable, root);
-            return root;
+            int pos = 0;
+            SkipWhitespace(text, ref pos);
+            if (text.Substring(pos).StartsWith("return"))
+            {
+                pos += "return".Length;
+                SkipWhitespace(text, ref pos);
+            }
+            if (pos < text.Length && text[pos] == '{')
+            {
+                pos++; // Skip the opening brace
+                var root = new LuaNode { Key = "Root", IsTable = true };
+                ParseTable(text, ref pos, root);
+                return root;
+            }
+            else
+            {
+                throw new Exception("Expected '{' at beginning of Lua table.");
+            }
         }
 
-        // Recursively converts a MoonSharp Table into a LuaNode hierarchy.
-        private static void ConvertTable(Table table, LuaNode parent)
+        private static void ParseTable(string text, ref int pos, LuaNode parent)
         {
-            foreach (var pair in table.Pairs)
+            while (pos < text.Length)
             {
-                // Convert the key to a string. You may adjust formatting as needed.
-                string key = pair.Key.ToPrintString();
-                LuaNode node = new LuaNode { Key = key, Parent = parent };
-
-                if (pair.Value.Type == DataType.Table)
+                SkipWhitespace(text, ref pos);
+                if (pos >= text.Length)
+                    break;
+                if (text[pos] == '}')
                 {
-                    ConvertTable(pair.Value.Table, node);
+                    pos++; // Consume the closing brace
+                    return;
                 }
-                else if (pair.Value.Type == DataType.String)
+                // Expect a key in the form: [ "key" ] or [number]
+                if (text[pos] == '[')
                 {
-                    // Use .String so that numeric-looking strings remain strings.
-                    node.Value = pair.Value.String;
+                    pos++; // skip '['
+                    SkipWhitespace(text, ref pos);
+                    string key = null;
+                    if (text[pos] == '"')
+                    {
+                        pos++; // skip opening quote
+                        int keyStart = pos;
+                        while (pos < text.Length && text[pos] != '"')
+                        {
+                            pos++;
+                        }
+                        key = text.Substring(keyStart, pos - keyStart);
+                        pos++; // skip closing quote
+                    }
+                    else
+                    {
+                        int keyStart = pos;
+                        while (pos < text.Length && char.IsDigit(text[pos]))
+                            pos++;
+                        key = text.Substring(keyStart, pos - keyStart);
+                    }
+                    SkipWhitespace(text, ref pos);
+                    if (pos < text.Length && text[pos] == ']')
+                    {
+                        pos++; // skip ']'
+                    }
+                    else
+                    {
+                        throw new Exception("Expected ']' after key");
+                    }
+                    SkipWhitespace(text, ref pos);
+                    if (pos < text.Length && text[pos] == '=')
+                    {
+                        pos++; // skip '='
+                    }
+                    else
+                    {
+                        throw new Exception("Expected '=' after key");
+                    }
+                    SkipWhitespace(text, ref pos);
+                    // Create a new node for this key.
+                    LuaNode child;
+                    if (pos < text.Length && text[pos] == '{')
+                    {
+                        child = new LuaNode { Key = key, Parent = parent, IsTable = true };
+                        pos++; // skip '{'
+                        ParseTable(text, ref pos, child);
+                    }
+                    else
+                    {
+                        child = new LuaNode { Key = key, Parent = parent };
+                        int valueStart = pos;
+                        while (pos < text.Length && text[pos] != ',' && text[pos] != '}')
+                        {
+                            pos++;
+                        }
+                        string value = text.Substring(valueStart, pos - valueStart).Trim();
+                        child.Value = value;
+                    }
+                    parent.Children.Add(child);
+                    SkipWhitespace(text, ref pos);
+                    if (pos < text.Length && text[pos] == ',')
+                    {
+                        pos++; // skip comma
+                    }
                 }
                 else
                 {
-                    // For other types (Number, Boolean, etc.), use ToPrintString.
-                    node.Value = pair.Value.ToPrintString();
+                    pos++;
                 }
-                parent.Children.Add(node);
             }
+        }
+
+        private static void SkipWhitespace(string text, ref int pos)
+        {
+            while (pos < text.Length && char.IsWhiteSpace(text[pos]))
+                pos++;
         }
     }
 }
