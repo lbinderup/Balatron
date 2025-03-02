@@ -8,6 +8,7 @@
             <Button Name="LoadButton" Content="Load Save File" Click="LoadButton_Click" Margin="0,0,0,10"/>
             <Button Name="SaveButton" Content="Save" Click="SaveButton_Click" IsEnabled="False" Margin="0,0,0,10"/>
             <TextBox Name="TextEditor" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Height="200"/>
+            <Button Name="DataViewerButton" Content="View Data" Click="DataViewerButton_Click" IsEnabled="False" Margin="0,10,0,10"/>
         </StackPanel>
     </Grid>
 </Window>

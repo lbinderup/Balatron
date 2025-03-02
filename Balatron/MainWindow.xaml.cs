@@ -3,18 +3,27 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Windows;
+using Balatron.Services;
 using Microsoft.Win32;
 
 namespace Balatron
 {
     public partial class MainWindow : Window
     {
-        private string originalFilePath;
-        private string tempTextFilePath;
+        private string _originalFilePath;
+        private string _tempTextFilePath;
 
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        internal void RePopulateTextEditor()
+        {
+            var updatedText = File.ReadAllText(_tempTextFilePath, Encoding.ASCII);
+            var rootNode = LuaParser.Parse(updatedText);
+            var readableTableData = LuaSerializer.Serialize(rootNode, true);
+            TextEditor.Text = readableTableData;
         }
 
         private void LoadButton_Click(object sender, RoutedEventArgs e)
@@ -26,36 +35,39 @@ namespace Balatron
 
             if (openFileDialog.ShowDialog() != true)
                 return;
-            
-            originalFilePath = openFileDialog.FileName;
-            CreateBackup(originalFilePath);
 
-            // Use the same temporary file path as in EditorView
-            tempTextFilePath = Path.Combine(Path.GetTempPath(), "save.txt");
-            DeflateFile(originalFilePath, tempTextFilePath);
+            _originalFilePath = openFileDialog.FileName;
+            CreateBackup(_originalFilePath);
 
-            // Load file contents into the main TextEditor
-            TextEditor.Text = File.ReadAllText(tempTextFilePath, Encoding.ASCII);
+            // Deflate the compressed file to a temporary text file
+            _tempTextFilePath = Path.Combine(Path.GetTempPath(), "save.txt");
+            DeflateFile(_originalFilePath, _tempTextFilePath);
+            RePopulateTextEditor();
+
             SaveButton.IsEnabled = true;
-                
-            // Open the EditorView. It will operate on the same temp file.
-            var editor = new Balatron.Views.EditorView();
+            DataViewerButton.IsEnabled = true;
+
+            var editor = Views.EditorView.Instance;
             editor.Show();
+            editor.Activate();
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            // Option 1: Re-read the temporary file to get the latest modifications.
-            var updatedText = File.ReadAllText(tempTextFilePath, Encoding.ASCII);
-            TextEditor.Text = updatedText;
-            
             // Compress the temporary file to create the new save file.
-            var newSavePath = Path.Combine(Path.GetDirectoryName(originalFilePath), "newsave.jkr");
-            CompressFile(tempTextFilePath, newSavePath);
+            var newSavePath = Path.Combine(Path.GetDirectoryName(_originalFilePath), "newsave.jkr");
+            CompressFile(_tempTextFilePath, newSavePath);
 
             // Replace the original file with the new save file.
-            File.Copy(newSavePath, originalFilePath, true);
+            File.Copy(newSavePath, _originalFilePath, true);
             MessageBox.Show("File saved successfully.");
+        }
+
+        private void DataViewerButton_Click(object sender, RoutedEventArgs e)
+        {
+            var editor = Views.EditorView.Instance;
+            editor.Show();
+            editor.Activate();
         }
 
         private void CreateBackup(string filePath)

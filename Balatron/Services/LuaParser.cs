@@ -36,9 +36,14 @@ namespace Balatron.Services
                 {
                     ConvertTable(pair.Value.Table, node);
                 }
+                else if (pair.Value.Type == DataType.String)
+                {
+                    // Use .String so that numeric-looking strings remain strings.
+                    node.Value = pair.Value.String;
+                }
                 else
                 {
-                    // For non-table values, convert to string.
+                    // For other types (Number, Boolean, etc.), use ToPrintString.
                     node.Value = pair.Value.ToPrintString();
                 }
                 parent.Children.Add(node);

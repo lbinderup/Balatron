@@ -1,3 +1,4 @@
+// File: Views/EditorView.xaml.cs
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -8,12 +9,25 @@ namespace Balatron.Views
 {
     public partial class EditorView : Window
     {
+        private static EditorView _instance;
+        public static EditorView Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new EditorView();
+                    _instance.Closed += (s, e) => _instance = null;
+                }
+                return _instance;
+            }
+        }
+
         private LuaNode _rootNode;
         private LuaNode _selectedNode;
-        // Adjust this path as needed.
         private readonly string _tempFilePath = Path.Combine(Path.GetTempPath(), "save.txt");
 
-        public EditorView()
+        private EditorView()
         {
             InitializeComponent();
             LoadAndParseLuaFile();
@@ -64,15 +78,21 @@ namespace Balatron.Views
         {
             if (_selectedNode is not { IsLeaf: true })
                 return;
-            
+    
             var modifyWindow = new ModifyValueWindow(GetAddress(_selectedNode), _selectedNode.Value);
             if (modifyWindow.ShowDialog() != true)
                 return;
-            
+    
             _selectedNode.Value = modifyWindow.NewValue;
-            // Re-serialize the entire tree with the updated value.
             var newLuaText = LuaSerializer.Serialize(_rootNode);
             File.WriteAllText(_tempFilePath, newLuaText, Encoding.ASCII);
+
+            // Retrieve the MainWindow instance and refresh the text editor.
+            if (Application.Current.MainWindow is Balatron.MainWindow mainWindow)
+            {
+                mainWindow.RePopulateTextEditor();
+            }
         }
+
     }
 }
