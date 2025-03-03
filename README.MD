@@ -10,9 +10,7 @@ A WPF application for managing and editing Lua nodes and game state data.
 - **Joker Management**  
   View and exchange joker cards.
 - **Value Modification**  
-  Edit values directly through a clean popup interface.
-- **Custom UI**  
-  Modern interface with custom styled windows.
+  Edit values directly.
 
 ## Screenshots
 
