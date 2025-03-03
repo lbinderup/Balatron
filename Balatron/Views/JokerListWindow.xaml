@@ -3,6 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:models="clr-namespace:Balatron.Models"
         Title="Joker List" Height="300" Width="600">
+    <Window.Icon>
+        <BitmapImage UriSource="pack://application:,,,/Balatron;component/Resources/app_icon.ico"/>
+    </Window.Icon>
     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
         <ItemsControl ItemsSource="{Binding Jokers}">
             <ItemsControl.ItemsPanel>
