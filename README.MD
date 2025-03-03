@@ -1,6 +1,8 @@
 # Balatron
 
 A WPF application for managing and editing Lua nodes and game state data.
+For net6.0-windows
+
 ![Lua Node Tree](Screenshots/main.png)
 
 ## Features
