@@ -26,10 +26,18 @@ namespace Balatron.Services
                 else
                     first = false;
                 
-                // Write key: if numeric, output without quotes; otherwise, escape and quote.
                 sb.Append("[");
-                if (double.TryParse(node.Key, out _))
+                // If ForceQuotedKey is true, always output with quotes.
+                if (node.ForceQuotedKey)
+                {
+                    sb.Append("\"");
                     sb.Append(node.Key);
+                    sb.Append("\"");
+                }
+                else if (double.TryParse(node.Key, out _))
+                {
+                    sb.Append(node.Key);
+                }
                 else
                 {
                     sb.Append("\"");
@@ -54,7 +62,6 @@ namespace Balatron.Services
                     }
                 }
             }
-            // Add trailing comma if any element was written.
             if (!first)
                 sb.Append(",");
             sb.Append("}");
@@ -75,8 +82,16 @@ namespace Balatron.Services
                     first = false;
                 sb.Append(indentStr);
                 sb.Append("  [");
-                if (double.TryParse(node.Key, out _))
+                if (node.ForceQuotedKey)
+                {
+                    sb.Append("\"");
                     sb.Append(node.Key);
+                    sb.Append("\"");
+                }
+                else if (double.TryParse(node.Key, out _))
+                {
+                    sb.Append(node.Key);
+                }
                 else
                 {
                     sb.Append("\"");

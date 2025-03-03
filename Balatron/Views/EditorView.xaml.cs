@@ -1,5 +1,6 @@
 // File: Views/EditorView.xaml.cs
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using Balatron.Models;
@@ -94,5 +95,37 @@ namespace Balatron.Views
             }
         }
 
+        public string GetValueByAddress(string address)
+        {
+            if (_rootNode == null)
+                return "";
+            var parts = address.Split('.');
+            LuaNode current = _rootNode;
+            foreach (var part in parts)
+            {
+                current = current.Children.FirstOrDefault(n => n.Key == part);
+                if (current == null)
+                    return "";
+            }
+            return current.Value;
+        }
+
+        public void SetValueByAddress(string address, string newValue)
+        {
+            if (_rootNode == null)
+                return;
+            var parts = address.Split('.');
+            LuaNode current = _rootNode;
+            foreach (var part in parts)
+            {
+                current = current.Children.FirstOrDefault(n => n.Key == part);
+                if (current == null)
+                    return;
+            }
+            current.Value = newValue;
+            // Re-serialize the entire Lua tree and write to the temp file.
+            string newLuaText = LuaSerializer.Serialize(_rootNode);
+            File.WriteAllText(_tempFilePath, newLuaText, Encoding.ASCII);
+        }
     }
 }

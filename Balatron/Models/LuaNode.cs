@@ -7,9 +7,11 @@ namespace Balatron.Models
     {
         private string _value;
         public string Key { get; set; }
+        public bool ForceQuotedKey { get; set; } = false;  // New flag
         public LuaNode Parent { get; set; }
         public ObservableCollection<LuaNode> Children { get; } = new ObservableCollection<LuaNode>();
 
+        // Indicates that this node represents a Lua table.
         public bool IsTable { get; set; } = false;
 
         public string Value

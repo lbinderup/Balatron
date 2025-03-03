@@ -37,9 +37,7 @@ namespace Balatron
                 return;
 
             _originalFilePath = openFileDialog.FileName;
-            CreateBackup(_originalFilePath);
 
-            // Deflate the compressed file to a temporary text file
             _tempTextFilePath = Path.Combine(Path.GetTempPath(), "save.txt");
             DeflateFile(_originalFilePath, _tempTextFilePath);
             RePopulateTextEditor();
@@ -50,15 +48,27 @@ namespace Balatron
             var editor = Views.EditorView.Instance;
             editor.Show();
             editor.Activate();
+
+            AddDirectModificationEntry("Dollars", "GAME.dollars");
+            AddDirectModificationEntry("Max Jokers", "cardAreas.jokers.config.card_limit");
+            AddDirectModificationEntry("Max Consumables", "cardAreas.consumeables.config.card_limit");
+        }
+
+        private void AddDirectModificationEntry(string optionName, string keyAddress)
+        {
+            var entry = new Views.DirectModificationEntry(optionName, keyAddress,
+                getter: Views.EditorView.Instance.GetValueByAddress,
+                setter: Views.EditorView.Instance.SetValueByAddress);
+            DirectModificationsPanel.Children.Add(entry);
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            // Compress the temporary file to create the new save file.
+            CreateBackup(_originalFilePath);
+
             var newSavePath = Path.Combine(Path.GetDirectoryName(_originalFilePath), "newsave.jkr");
             CompressFile(_tempTextFilePath, newSavePath);
 
-            // Replace the original file with the new save file.
             File.Copy(newSavePath, _originalFilePath, true);
             MessageBox.Show("File saved successfully.");
         }

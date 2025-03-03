@@ -45,8 +45,10 @@ namespace Balatron.Services
                     pos++; // skip '['
                     SkipWhitespace(text, ref pos);
                     string key = null;
+                    bool quotedKey = false;
                     if (text[pos] == '"')
                     {
+                        quotedKey = true;
                         pos++; // skip opening quote
                         int keyStart = pos;
                         while (pos < text.Length && text[pos] != '"')
@@ -82,17 +84,16 @@ namespace Balatron.Services
                         throw new Exception("Expected '=' after key");
                     }
                     SkipWhitespace(text, ref pos);
-                    // Create a new node for this key.
                     LuaNode child;
                     if (pos < text.Length && text[pos] == '{')
                     {
-                        child = new LuaNode { Key = key, Parent = parent, IsTable = true };
+                        child = new LuaNode { Key = key, Parent = parent, IsTable = true, ForceQuotedKey = quotedKey };
                         pos++; // skip '{'
                         ParseTable(text, ref pos, child);
                     }
                     else
                     {
-                        child = new LuaNode { Key = key, Parent = parent };
+                        child = new LuaNode { Key = key, Parent = parent, ForceQuotedKey = quotedKey };
                         int valueStart = pos;
                         while (pos < text.Length && text[pos] != ',' && text[pos] != '}')
                         {
