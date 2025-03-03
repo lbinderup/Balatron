@@ -1,16 +1,22 @@
-<Window x:Class="Balatron.Views.EditorView"
+<Window x:Class="Balatron.Views.LuaNodeTreeWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Balatron.Models"
-        Title="Balatron - Lua Editor" Height="500" Width="400">
+        Title="Lua Node Tree Editor" Height="500" Width="400">
+    <Window.Icon>
+        <BitmapImage UriSource="pack://application:,,,/Balatron;component/Resources/app_icon.ico"/>
+    </Window.Icon>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/> <!-- Fixed height for bottom panel -->
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" /> <!-- Fixed height for bottom panel -->
         </Grid.RowDefinitions>
         <!-- TreeView in first row with scroll support -->
         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
-            <TreeView Name="LuaTreeView" Margin="10" SelectedItemChanged="LuaTreeView_SelectedItemChanged">
+            <TreeView Name="LuaTreeView"
+                      Margin="10"
+                      SelectedItemChanged="LuaTreeView_SelectedItemChanged"
+                      MouseDoubleClick="LuaTreeView_MouseDoubleClick">
                 <TreeView.Resources>
                     <HierarchicalDataTemplate DataType="{x:Type local:LuaNode}" ItemsSource="{Binding Children}">
                         <StackPanel Orientation="Horizontal">
@@ -24,9 +30,15 @@
         </ScrollViewer>
         <!-- Bottom panel in second row -->
         <StackPanel Grid.Row="1" Margin="10" Orientation="Vertical">
-            <TextBox Name="AddressTextBox" IsReadOnly="True" Height="25" Margin="0,0,0,5"
-                     VerticalContentAlignment="Center" />
-            <Button Name="ModifyValueButton" Content="Modify Value" Height="30" 
+            <TextBox Name="AddressTextBox" 
+                     IsReadOnly="True" 
+                     Height="25" 
+                     Margin="0,0,0,5"
+                     VerticalContentAlignment="Center"
+                     Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                     Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                     BorderBrush="{DynamicResource {x:Static SystemColors.InactiveBorderBrushKey}}" />
+            <Button Name="ModifyValueButton" Content="Modify Value" Height="30"
                     Click="ModifyValueButton_Click" IsEnabled="False" />
         </StackPanel>
     </Grid>

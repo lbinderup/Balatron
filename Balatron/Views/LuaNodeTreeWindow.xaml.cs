@@ -1,23 +1,24 @@
-// File: Views/EditorView.xaml.cs
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Input;
 using Balatron.Models;
 using Balatron.Services;
 
 namespace Balatron.Views
 {
-    public partial class EditorView : Window
+    public partial class LuaNodeTreeWindow : Window
     {
-        private static EditorView _instance;
-        public static EditorView Instance
+        private static LuaNodeTreeWindow _instance;
+        public static LuaNodeTreeWindow Instance
         {
             get
             {
                 if (_instance == null)
                 {
-                    _instance = new EditorView();
+                    _instance = new LuaNodeTreeWindow();
                     _instance.Closed += (s, e) => _instance = null;
                 }
                 return _instance;
@@ -28,7 +29,7 @@ namespace Balatron.Views
         private LuaNode _selectedNode;
         private readonly string _tempFilePath = Path.Combine(Path.GetTempPath(), "save.txt");
 
-        private EditorView()
+        private LuaNodeTreeWindow()
         {
             InitializeComponent();
             LoadAndParseLuaFile();
@@ -62,6 +63,14 @@ namespace Balatron.Views
                 ModifyValueButton.IsEnabled = false;
             }
         }
+        
+        private void LuaTreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if ((e.OriginalSource as FrameworkElement)?.DataContext is not LuaNode { IsLeaf: true })
+                return;
+
+            ModifyValueButton_Click(sender, e);
+        }
 
         private static string GetAddress(LuaNode node)
         {
@@ -79,17 +88,24 @@ namespace Balatron.Views
         {
             if (_selectedNode is not { IsLeaf: true })
                 return;
+
+            var modifyWindow = new ModifyValuePopup(GetAddress(_selectedNode), _selectedNode.Value);
     
-            var modifyWindow = new ModifyValueWindow(GetAddress(_selectedNode), _selectedNode.Value);
+            var mousePosition = Mouse.GetPosition(Application.Current.MainWindow);
+            var windowPosition = Application.Current.MainWindow.PointToScreen(mousePosition);
+    
+            modifyWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+            modifyWindow.Left = windowPosition.X;
+            modifyWindow.Top = windowPosition.Y;
+    
             if (modifyWindow.ShowDialog() != true)
                 return;
-    
+
             _selectedNode.Value = modifyWindow.NewValue;
             var newLuaText = LuaSerializer.Serialize(_rootNode);
             File.WriteAllText(_tempFilePath, newLuaText, Encoding.ASCII);
 
-            // Retrieve the MainWindow instance and refresh the text editor.
-            if (Application.Current.MainWindow is Balatron.MainWindow mainWindow)
+            if (Application.Current.MainWindow is MainWindow mainWindow)
             {
                 mainWindow.RePopulateTextEditor();
             }
@@ -100,7 +116,7 @@ namespace Balatron.Views
             if (_rootNode == null)
                 return "";
             var parts = address.Split('.');
-            LuaNode current = _rootNode;
+            var current = _rootNode;
             foreach (var part in parts)
             {
                 current = current.Children.FirstOrDefault(n => n.Key == part);
@@ -115,7 +131,7 @@ namespace Balatron.Views
             if (_rootNode == null)
                 return;
             var parts = address.Split('.');
-            LuaNode current = _rootNode;
+            var current = _rootNode;
             foreach (var part in parts)
             {
                 current = current.Children.FirstOrDefault(n => n.Key == part);
@@ -124,8 +140,41 @@ namespace Balatron.Views
             }
             current.Value = newValue;
             // Re-serialize the entire Lua tree and write to the temp file.
-            string newLuaText = LuaSerializer.Serialize(_rootNode);
+            var newLuaText = LuaSerializer.Serialize(_rootNode);
             File.WriteAllText(_tempFilePath, newLuaText, Encoding.ASCII);
+        }
+        
+        public ObservableCollection<JokerViewModel> GetJokerViewModels()
+        {
+            var jokers = new ObservableCollection<JokerViewModel>();
+
+            // Navigate to the node "cardAreas" -> "jokers" -> "cards"
+            var cardAreas = _rootNode.Children.FirstOrDefault(n => n.Key == "cardAreas");
+            if (cardAreas == null) return jokers;
+            var jokersNode = cardAreas.Children.FirstOrDefault(n => n.Key == "jokers");
+            if (jokersNode == null) return jokers;
+            var cardsNode = jokersNode.Children.FirstOrDefault(n => n.Key == "cards");
+            if (cardsNode == null) return jokers;
+
+            // Iterate over the children of "cards" and convert each into a JokerViewModel.
+            foreach (var card in cardsNode.Children)
+            {
+                var labelNode = card.Children.FirstOrDefault(n => n.Key == "label");
+                var abilityNode = card.Children.FirstOrDefault(n => n.Key == "ability");
+                var effectNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "effect");
+                var sortIdNode = card.Children.FirstOrDefault(n => n.Key == "sort_id");
+                var rankNode = card.Children.FirstOrDefault(n => n.Key == "rank");
+
+                var joker = new JokerViewModel
+                {
+                    Label = labelNode?.Value ?? "Unknown",
+                    Effect = effectNode?.Value ?? "",
+                    SortId = sortIdNode != null && int.TryParse(sortIdNode.Value, out int sid) ? sid : 0,
+                    Rank = rankNode != null && int.TryParse(rankNode.Value, out int r) ? r : 0,
+                };
+                jokers.Add(joker);
+            }
+            return jokers;
         }
     }
 }

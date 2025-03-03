@@ -16,6 +16,7 @@ namespace Balatron
         public MainWindow()
         {
             InitializeComponent();
+            Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
         }
 
         internal void RePopulateTextEditor()
@@ -44,8 +45,9 @@ namespace Balatron
 
             SaveButton.IsEnabled = true;
             DataViewerButton.IsEnabled = true;
+            OpenJokerListButton.IsEnabled = true;
 
-            var editor = Views.EditorView.Instance;
+            var editor = Views.LuaNodeTreeWindow.Instance;
             editor.Show();
             editor.Activate();
 
@@ -57,8 +59,8 @@ namespace Balatron
         private void AddDirectModificationEntry(string optionName, string keyAddress)
         {
             var entry = new Views.DirectModificationEntry(optionName, keyAddress,
-                getter: Views.EditorView.Instance.GetValueByAddress,
-                setter: Views.EditorView.Instance.SetValueByAddress);
+                getter: Views.LuaNodeTreeWindow.Instance.GetValueByAddress,
+                setter: Views.LuaNodeTreeWindow.Instance.SetValueByAddress);
             DirectModificationsPanel.Children.Add(entry);
         }
 
@@ -72,10 +74,21 @@ namespace Balatron
             File.Copy(newSavePath, _originalFilePath, true);
             MessageBox.Show("File saved successfully.");
         }
-
-        private void DataViewerButton_Click(object sender, RoutedEventArgs e)
+        
+        private void OpenJokerListButton_Click(object sender, RoutedEventArgs e)
         {
-            var editor = Views.EditorView.Instance;
+            var editor = Views.LuaNodeTreeWindow.Instance;
+            if (editor != null)
+            {
+                var jokers = editor.GetJokerViewModels();
+                var jokerWindow = new Views.JokerListWindow(jokers);
+                jokerWindow.Show();
+            }
+        }
+
+        private void LuaNodeTreeViewerButton_Click(object sender, RoutedEventArgs e)
+        {
+            var editor = Views.LuaNodeTreeWindow.Instance;
             editor.Show();
             editor.Activate();
         }

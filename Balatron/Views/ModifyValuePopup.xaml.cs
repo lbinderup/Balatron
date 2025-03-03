@@ -2,15 +2,17 @@ using System.Windows;
 
 namespace Balatron.Views
 {
-    public partial class ModifyValueWindow : Window
+    public partial class ModifyValuePopup : Window
     {
         public string NewValue { get; private set; }
 
-        public ModifyValueWindow(string address, string currentValue)
+        public ModifyValuePopup(string address, string currentValue)
         {
             InitializeComponent();
-            AddressLabel.Text = "Address: " + address;
             ValueTextBox.Text = currentValue;
+            
+            // Enable dragging
+            MouseLeftButtonDown += (s, e) => DragMove();
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)

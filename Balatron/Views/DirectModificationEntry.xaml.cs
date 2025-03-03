@@ -37,7 +37,7 @@ namespace Balatron.Views
         private void ModifyButton_Click(object sender, RoutedEventArgs e)
         {
             var currentVal = GetValueFunc(KeyAddress);
-            var modifyWindow = new ModifyValueWindow(KeyAddress, currentVal);
+            var modifyWindow = new ModifyValuePopup(KeyAddress, currentVal);
             if (modifyWindow.ShowDialog() != true)
                 return;
 

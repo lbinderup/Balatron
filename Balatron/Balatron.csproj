@@ -10,4 +10,9 @@
     <PackageReference Include="MoonSharp.StaticGlue.Interpreter" Version="2.0.0-beta-2021-03-30-f19fbff" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="Resources\app_icon.ico" />
+    <Resource Include="Resources\app_icon.ico" />
+  </ItemGroup>
+
 </Project>
