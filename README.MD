@@ -1,28 +1,49 @@
-Balatron
+# Balatron
+
 A WPF application for managing and editing Lua nodes and game state data.
 
+## Features
 
-Features
-Lua Node Tree Editor - View and modify structured Lua data
-Joker Management - View and exchange joker cards
-Value Modification - Edit values directly through a clean popup interface
-Custom UI - Modern interface with custom styled windows
-Installation
-Clone the repository
-Open the solution in JetBrains Rider or Visual Studio
-Build the solution
-Run the application
-Usage
-Lua Node Tree Editor
-The Lua Node Tree Editor allows you to navigate and modify Lua data structures:
+- **Lua Node Tree Editor**  
+  View and modify structured Lua data.
+- **Joker Management**  
+  View and exchange joker cards.
+- **Value Modification**  
+  Edit values directly through a clean popup interface.
+- **Custom UI**  
+  Modern interface with custom styled windows.
 
+## Screenshots
 
-Navigate the tree to explore nested data
-Double-click nodes to view details
-Use the "Modify Value" button to change node values
-Joker List
-View and manage joker cards:
+### Lua Node Tree Editor
 
+![Lua Node Tree](Screenshots/nodetree.png)
 
-See all available jokers in a horizontal scrolling list
-Exchange jokers using the provided buttons
+### Joker List
+
+![Joker List](Screenshots/jokerlist.png)
+
+## Installation
+
+1. Clone the repository.
+2. Open the solution in JetBrains Rider or Visual Studio.
+3. Build the solution.
+4. Run the application.
+
+## Usage
+
+### Lua Node Tree Editor
+
+- **Navigation:**  
+  Explore nested Lua data by navigating through the tree.
+- **Node Details:**  
+  Double-click nodes to view detailed information.
+- **Value Modification:**  
+  Click the "Modify Value" button to edit node values.
+
+### Joker List
+
+- **Display:**  
+  View all available jokers in a horizontal scrolling list.
+- **Interaction:**  
+  Use the provided buttons to exchange joker cards.
