@@ -21,11 +21,12 @@ jobs:
         with:
           dotnet-version: 6.0.x
 
-      - name: Build solution
-        run: dotnet build Balatron/Balatron.sln --configuration ${{ matrix.configuration }}
+      - name: Publish application
+        working-directory: Balatron
+        run: dotnet publish Balatron.csproj --configuration ${{ matrix.configuration }} --output publish
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: BuildOutput
-          path: Balatron/bin/${{ matrix.configuration }}
+          path: Balatron/publish
