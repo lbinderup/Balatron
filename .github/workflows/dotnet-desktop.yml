@@ -22,7 +22,7 @@ jobs:
           dotnet-version: 6.0.x
 
       - name: Build solution
-        run: dotnet build Balatron.sln --configuration ${{ matrix.configuration }}
+        run: dotnet build Balatron/Balatron.sln --configuration ${{ matrix.configuration }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
