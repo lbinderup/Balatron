@@ -150,7 +150,15 @@ namespace Balatron.Views
             File.WriteAllText(_tempFilePath, newLuaText, Encoding.ASCII);
         }
         
-        public ObservableCollection<JokerViewModel> GetJokerViewModels(Action<JokerViewModel> importAction, Action<JokerViewModel> exportAction, Action<JokerViewModel> toggleNegativeAction)
+        public ObservableCollection<JokerViewModel> GetJokerViewModels(
+            Action<JokerViewModel> importAction,
+            Action<JokerViewModel> exportAction,
+            Action<JokerViewModel> toggleNegativeAction,
+            Action<JokerViewModel> toggleEternalAction,
+            Action<JokerViewModel> toggleRentalAction,
+            Action<JokerViewModel> togglePerishableAction,
+            Action<JokerViewModel> editPerishTallyAction,
+            Action<JokerViewModel> editSellCostAction)
         {
             if (_rootNode == null)
                 return new ObservableCollection<JokerViewModel>();
@@ -173,10 +181,23 @@ namespace Balatron.Views
                 var effectNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "effect");
                 var sortIdNode = card.Children.FirstOrDefault(n => n.Key == "sort_id");
                 var rankNode = card.Children.FirstOrDefault(n => n.Key == "rank");
+                var eternalNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "eternal");
+                var rentalNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "rental");
+                var perishableNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "perishable");
+                var perishTallyNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "perish_tally");
+                var sellCostNode = card.Children.FirstOrDefault(n => n.Key == "sell_cost");
 
                 var slotIndex = int.TryParse(card.Key, out var keyIndex) ? keyIndex : jokers.Count + 1;
 
-                var joker = new JokerViewModel(importAction, exportAction, toggleNegativeAction)
+                var joker = new JokerViewModel(
+                    importAction,
+                    exportAction,
+                    toggleNegativeAction,
+                    toggleEternalAction,
+                    toggleRentalAction,
+                    togglePerishableAction,
+                    editPerishTallyAction,
+                    editSellCostAction)
                 {
                     Label = labelNode?.Value ?? "Unknown",
                     Effect = effectNode?.Value ?? "",
@@ -184,7 +205,12 @@ namespace Balatron.Views
                     Rank = rankNode != null && int.TryParse(rankNode.Value, out int r) ? r : 0,
                     CardNode = card,
                     SlotIndex = slotIndex,
-                    IsNegativeEdition = HasNegativeEdition(card)
+                    IsNegativeEdition = HasNegativeEdition(card),
+                    IsEternal = eternalNode != null && string.Equals(eternalNode.Value, "true", StringComparison.OrdinalIgnoreCase),
+                    IsRental = rentalNode != null && string.Equals(rentalNode.Value, "true", StringComparison.OrdinalIgnoreCase),
+                    IsPerishable = perishableNode != null && string.Equals(perishableNode.Value, "true", StringComparison.OrdinalIgnoreCase),
+                    PerishTally = perishTallyNode != null && int.TryParse(perishTallyNode.Value, out int pt) ? pt : 0,
+                    SellCost = sellCostNode != null && int.TryParse(sellCostNode.Value, out int sc) ? sc : 0
                 };
                 jokers.Add(joker);
             }

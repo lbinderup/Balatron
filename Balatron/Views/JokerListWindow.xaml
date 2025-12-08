@@ -37,6 +37,25 @@
                                 <TextBlock Text="Sort:" />
                                 <TextBlock Text="{Binding SortId}" Margin="4 0 0 0" />
                             </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0 0 0 4">
+                                <Button Content="{Binding EternalToggleLabel}"
+                                        Command="{Binding ToggleEternalCommand}"
+                                        Padding="3 0 3 0"
+                                        Margin="0 0 4 0" />
+                                <Button Content="{Binding RentalToggleLabel}"
+                                        Command="{Binding ToggleRentalCommand}"
+                                        Padding="3 0 3 0" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0 0 0 4">
+                                <TextBlock Text="{Binding PerishableLabel}" Margin="0 0 6 0" />
+                                <Button Content="{Binding PerishableToggleLabel}"
+                                        Command="{Binding TogglePerishableCommand}"
+                                        Padding="3 0 3 0"
+                                        Margin="0 0 4 0" />
+                                <Button Content="Set Turns"
+                                        Command="{Binding EditPerishTallyCommand}"
+                                        Padding="3 0 3 0" />
+                            </StackPanel>
                             <Button Content="Import Joker"
                                     Command="{Binding ExchangeCommand}"
                                     HorizontalAlignment="Stretch"
@@ -51,6 +70,12 @@
                                     Command="{Binding ToggleNegativeCommand}"
                                     HorizontalAlignment="Stretch"
                                     Padding="3 0 3 0" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0 4 0 0">
+                                <TextBlock Text="{Binding SellCostLabel}" Margin="0 0 6 0" />
+                                <Button Content="Edit"
+                                        Command="{Binding EditSellCostCommand}"
+                                        Padding="3 0 3 0" />
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </DataTemplate>
