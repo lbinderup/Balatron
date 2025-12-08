@@ -1,5 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -21,12 +23,12 @@ namespace Balatron.Views
             Jokers = _editor.GetJokerViewModels(
                 ImportJoker,
                 ExportJoker,
-                ToggleNegativeEdition,
                 ToggleEternal,
                 ToggleRental,
                 TogglePerishable,
                 EditPerishTally,
-                EditSellCost);
+                EditSellCost,
+                SetEdition);
             DataContext = this;
         }
 
@@ -35,7 +37,7 @@ namespace Balatron.Views
             var saveFileDialog = new SaveFileDialog
             {
                 Filter = "Joker JSON (*.json)|*.json",
-                FileName = $"joker_slot_{joker.SlotIndex}.json"
+                FileName = $"{SanitizeFileName(joker.Label)}.json"
             };
 
             if (saveFileDialog.ShowDialog() == true)
@@ -88,55 +90,12 @@ namespace Balatron.Views
             joker.Effect = effectNode?.Value ?? string.Empty;
             joker.SortId = sortIdNode != null && int.TryParse(sortIdNode.Value, out int sid) ? sid : 0;
             joker.Rank = rankNode != null && int.TryParse(rankNode.Value, out int r) ? r : 0;
-            joker.IsNegativeEdition = LuaNodeTreeWindow.HasNegativeEdition(joker.CardNode);
             joker.IsEternal = eternalNode != null && string.Equals(eternalNode.Value, "true", System.StringComparison.OrdinalIgnoreCase);
             joker.IsRental = rentalNode != null && string.Equals(rentalNode.Value, "true", System.StringComparison.OrdinalIgnoreCase);
             joker.IsPerishable = perishableNode != null && string.Equals(perishableNode.Value, "true", System.StringComparison.OrdinalIgnoreCase);
             joker.PerishTally = perishTallyNode != null && int.TryParse(perishTallyNode.Value, out int pt) ? pt : 0;
             joker.SellCost = sellCostNode != null && int.TryParse(sellCostNode.Value, out int sc) ? sc : 0;
-        }
-
-        private void ToggleNegativeEdition(JokerViewModel joker)
-        {
-            if (joker?.CardNode == null)
-                return;
-
-            var editionNode = joker.CardNode.Children.FirstOrDefault(n => n.Key == "edition");
-
-            if (editionNode != null)
-            {
-                joker.CardNode.Children.Remove(editionNode);
-            }
-            else
-            {
-                editionNode = new LuaNode
-                {
-                    Key = "edition",
-                    Parent = joker.CardNode,
-                    IsTable = true
-                };
-
-                var negativeNode = new LuaNode
-                {
-                    Key = "negative",
-                    Parent = editionNode,
-                    Value = "true"
-                };
-
-                var typeNode = new LuaNode
-                {
-                    Key = "type",
-                    Parent = editionNode,
-                    Value = "\"negative\""
-                };
-
-                editionNode.Children.Add(negativeNode);
-                editionNode.Children.Add(typeNode);
-                joker.CardNode.Children.Add(editionNode);
-            }
-
-            joker.IsNegativeEdition = LuaNodeTreeWindow.HasNegativeEdition(joker.CardNode);
-            _editor.PersistChanges();
+            joker.SetSelectedEditionSilently(LuaNodeTreeWindow.GetEditionType(joker.CardNode));
         }
 
         private static LuaNode GetAbilityNode(JokerViewModel joker)
@@ -321,6 +280,85 @@ namespace Balatron.Views
                 joker.SellCost = newSellCost;
                 _editor.PersistChanges();
             }
+        }
+
+        private static string SanitizeFileName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return "joker";
+
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var cleaned = string.Join("_", name.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries)).Trim();
+            return string.IsNullOrWhiteSpace(cleaned) ? "joker" : cleaned;
+        }
+
+        private void SetEdition(JokerViewModel joker, string edition)
+        {
+            if (joker?.CardNode == null)
+                return;
+
+            ApplyEdition(joker.CardNode, edition);
+            joker.SetSelectedEditionSilently(LuaNodeTreeWindow.GetEditionType(joker.CardNode));
+            _editor.PersistChanges();
+        }
+
+        private static void ApplyEdition(LuaNode cardNode, string edition)
+        {
+            if (cardNode == null)
+                return;
+
+            var currentEdition = cardNode.Children.FirstOrDefault(n => n.Key == "edition");
+            if (currentEdition != null)
+            {
+                cardNode.Children.Remove(currentEdition);
+            }
+
+            if (string.Equals(edition, "None", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(edition))
+                return;
+
+            var editionNode = new LuaNode
+            {
+                Key = "edition",
+                Parent = cardNode,
+                IsTable = true
+            };
+
+            void AddChild(string key, string value)
+            {
+                editionNode.Children.Add(new LuaNode
+                {
+                    Key = key,
+                    Parent = editionNode,
+                    Value = value
+                });
+            }
+
+            switch (edition)
+            {
+                case "Negative":
+                    AddChild("negative", "true");
+                    AddChild("type", "\"negative\"");
+                    break;
+                case "Foil":
+                    AddChild("type", "\"foil\"");
+                    AddChild("chips", "50");
+                    AddChild("foil", "true");
+                    break;
+                case "Holographic":
+                    AddChild("type", "\"holo\"");
+                    AddChild("holo", "true");
+                    AddChild("mult", "10");
+                    break;
+                case "Polychrome":
+                    AddChild("type", "\"polychrome\"");
+                    AddChild("x_mult", 1.5.ToString(CultureInfo.InvariantCulture));
+                    AddChild("polychrome", "true");
+                    break;
+                default:
+                    return;
+            }
+
+            cardNode.Children.Add(editionNode);
         }
     }
 }

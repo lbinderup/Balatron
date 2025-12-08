@@ -153,12 +153,12 @@ namespace Balatron.Views
         public ObservableCollection<JokerViewModel> GetJokerViewModels(
             Action<JokerViewModel> importAction,
             Action<JokerViewModel> exportAction,
-            Action<JokerViewModel> toggleNegativeAction,
             Action<JokerViewModel> toggleEternalAction,
             Action<JokerViewModel> toggleRentalAction,
             Action<JokerViewModel> togglePerishableAction,
             Action<JokerViewModel> editPerishTallyAction,
-            Action<JokerViewModel> editSellCostAction)
+            Action<JokerViewModel> editSellCostAction,
+            Action<JokerViewModel, string> setEditionAction)
         {
             if (_rootNode == null)
                 return new ObservableCollection<JokerViewModel>();
@@ -192,12 +192,12 @@ namespace Balatron.Views
                 var joker = new JokerViewModel(
                     importAction,
                     exportAction,
-                    toggleNegativeAction,
                     toggleEternalAction,
                     toggleRentalAction,
                     togglePerishableAction,
                     editPerishTallyAction,
-                    editSellCostAction)
+                    editSellCostAction,
+                    setEditionAction)
                 {
                     Label = labelNode?.Value ?? "Unknown",
                     Effect = effectNode?.Value ?? "",
@@ -205,13 +205,13 @@ namespace Balatron.Views
                     Rank = rankNode != null && int.TryParse(rankNode.Value, out int r) ? r : 0,
                     CardNode = card,
                     SlotIndex = slotIndex,
-                    IsNegativeEdition = HasNegativeEdition(card),
                     IsEternal = eternalNode != null && string.Equals(eternalNode.Value, "true", StringComparison.OrdinalIgnoreCase),
                     IsRental = rentalNode != null && string.Equals(rentalNode.Value, "true", StringComparison.OrdinalIgnoreCase),
                     IsPerishable = perishableNode != null && string.Equals(perishableNode.Value, "true", StringComparison.OrdinalIgnoreCase),
                     PerishTally = perishTallyNode != null && int.TryParse(perishTallyNode.Value, out int pt) ? pt : 0,
                     SellCost = sellCostNode != null && int.TryParse(sellCostNode.Value, out int sc) ? sc : 0
                 };
+                joker.SetSelectedEditionSilently(GetEditionType(card));
                 jokers.Add(joker);
             }
             return jokers;
@@ -247,15 +247,43 @@ namespace Balatron.Views
 
         public static bool HasNegativeEdition(LuaNode cardNode)
         {
+            return string.Equals(GetEditionType(cardNode), "Negative", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string GetEditionType(LuaNode cardNode)
+        {
             if (cardNode == null)
-                return false;
+                return "None";
 
             var editionNode = cardNode.Children.FirstOrDefault(n => n.Key == "edition");
             if (editionNode == null)
-                return false;
+                return "None";
 
-            var negativeFlag = editionNode.Children.FirstOrDefault(n => n.Key == "negative");
-            return negativeFlag != null && string.Equals(negativeFlag.Value, "true", StringComparison.OrdinalIgnoreCase);
+            var typeNode = editionNode.Children.FirstOrDefault(n => n.Key == "type");
+            var typeValue = typeNode?.Value?.Trim('"').ToLowerInvariant();
+
+            return typeValue switch
+            {
+                "negative" => "Negative",
+                "foil" => "Foil",
+                "holo" or "holographic" => "Holographic",
+                "polychrome" => "Polychrome",
+                _ => InferEditionFromFlags(editionNode)
+            };
+        }
+
+        private static string InferEditionFromFlags(LuaNode editionNode)
+        {
+            if (editionNode.Children.Any(c => c.Key == "negative"))
+                return "Negative";
+            if (editionNode.Children.Any(c => c.Key == "foil"))
+                return "Foil";
+            if (editionNode.Children.Any(c => c.Key == "holo"))
+                return "Holographic";
+            if (editionNode.Children.Any(c => c.Key == "polychrome"))
+                return "Polychrome";
+
+            return "None";
         }
     }
 }

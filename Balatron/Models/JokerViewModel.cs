@@ -104,12 +104,12 @@ namespace Balatron.Models
 
         public ICommand ExchangeCommand { get; set; }
         public ICommand ExportCommand { get; set; }
-        public ICommand ToggleNegativeCommand { get; set; }
         public ICommand ToggleEternalCommand { get; set; }
         public ICommand ToggleRentalCommand { get; set; }
         public ICommand TogglePerishableCommand { get; set; }
         public ICommand EditPerishTallyCommand { get; set; }
         public ICommand EditSellCostCommand { get; set; }
+        public ICommand SetEditionCommand { get; set; }
 
         private Action<JokerViewModel> _importAction;
         public Action<JokerViewModel> ImportAction
@@ -129,17 +129,6 @@ namespace Balatron.Models
             set
             {
                 _exportAction = value;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        private Action<JokerViewModel> _toggleNegativeAction;
-        public Action<JokerViewModel> ToggleNegativeAction
-        {
-            get => _toggleNegativeAction;
-            set
-            {
-                _toggleNegativeAction = value;
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -199,51 +188,77 @@ namespace Balatron.Models
             }
         }
 
-        private bool _isNegativeEdition;
-        public bool IsNegativeEdition
+        private Action<JokerViewModel, string> _setEditionAction;
+        public Action<JokerViewModel, string> SetEditionAction
         {
-            get => _isNegativeEdition;
+            get => _setEditionAction;
             set
             {
-                _isNegativeEdition = value;
-                OnPropertyChanged(nameof(IsNegativeEdition));
-                OnPropertyChanged(nameof(NegativeToggleLabel));
+                _setEditionAction = value;
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 
-        public string NegativeToggleLabel => IsNegativeEdition ? "Disable Negative" : "Enable Negative";
-        public string EternalToggleLabel => IsEternal ? "Disable Eternal" : "Enable Eternal";
-        public string RentalToggleLabel => IsRental ? "Disable Rental" : "Enable Rental";
+        public string EternalToggleLabel => IsEternal ? "☑ Eternal" : "☐ Eternal";
+        public string RentalToggleLabel => IsRental ? "☑ Rental" : "☐ Rental";
         public string PerishableLabel => IsPerishable ? $"Perishable ({PerishTally} turns)" : "Perishable: Off";
-        public string PerishableToggleLabel => IsPerishable ? "Remove Perishable" : "Add Perishable";
+        public string PerishableToggleLabel => IsPerishable ? "☑ Perishable" : "☐ Perishable";
         public string SellCostLabel => $"Sell Cost: {SellCost}";
+
+        public string[] EditionOptions { get; } = { "None", "Negative", "Foil", "Holographic", "Polychrome" };
+
+        private string _selectedEdition = "None";
+        private bool _suppressEditionAction;
+        public string SelectedEdition
+        {
+            get => _selectedEdition;
+            set
+            {
+                if (_selectedEdition == value)
+                    return;
+
+                _selectedEdition = value;
+                OnPropertyChanged(nameof(SelectedEdition));
+                if (!_suppressEditionAction)
+                {
+                    SetEditionAction?.Invoke(this, value);
+                }
+            }
+        }
+
+        public void SetSelectedEditionSilently(string edition)
+        {
+            _suppressEditionAction = true;
+            SelectedEdition = edition;
+            _suppressEditionAction = false;
+        }
 
         public JokerViewModel(
             Action<JokerViewModel> importAction = null,
             Action<JokerViewModel> exportAction = null,
-            Action<JokerViewModel> toggleNegativeAction = null,
             Action<JokerViewModel> toggleEternalAction = null,
             Action<JokerViewModel> toggleRentalAction = null,
             Action<JokerViewModel> togglePerishableAction = null,
             Action<JokerViewModel> editPerishTallyAction = null,
-            Action<JokerViewModel> editSellCostAction = null)
+            Action<JokerViewModel> editSellCostAction = null,
+            Action<JokerViewModel, string> setEditionAction = null)
         {
             ImportAction = importAction;
             ExportAction = exportAction;
-            ToggleNegativeAction = toggleNegativeAction;
             ToggleEternalAction = toggleEternalAction;
             ToggleRentalAction = toggleRentalAction;
             TogglePerishableAction = togglePerishableAction;
             EditPerishTallyAction = editPerishTallyAction;
             EditSellCostAction = editSellCostAction;
+            SetEditionAction = setEditionAction;
             ExchangeCommand = new RelayCommand(_ => ImportAction?.Invoke(this), _ => ImportAction != null);
             ExportCommand = new RelayCommand(_ => ExportAction?.Invoke(this), _ => ExportAction != null);
-            ToggleNegativeCommand = new RelayCommand(_ => ToggleNegativeAction?.Invoke(this), _ => ToggleNegativeAction != null);
             ToggleEternalCommand = new RelayCommand(_ => ToggleEternalAction?.Invoke(this), _ => ToggleEternalAction != null);
             ToggleRentalCommand = new RelayCommand(_ => ToggleRentalAction?.Invoke(this), _ => ToggleRentalAction != null);
             TogglePerishableCommand = new RelayCommand(_ => TogglePerishableAction?.Invoke(this), _ => TogglePerishableAction != null);
             EditPerishTallyCommand = new RelayCommand(_ => EditPerishTallyAction?.Invoke(this), _ => EditPerishTallyAction != null);
             EditSellCostCommand = new RelayCommand(_ => EditSellCostAction?.Invoke(this), _ => EditSellCostAction != null);
+            SetEditionCommand = new RelayCommand(param => SetEditionAction?.Invoke(this, param as string), _ => SetEditionAction != null);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
