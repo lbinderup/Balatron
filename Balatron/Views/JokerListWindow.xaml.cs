@@ -16,7 +16,7 @@ namespace Balatron.Views
         {
             InitializeComponent();
             _editor = editor;
-            Jokers = _editor.GetJokerViewModels(ImportJoker, ExportJoker);
+            Jokers = _editor.GetJokerViewModels(ImportJoker, ExportJoker, ToggleNegativeEdition);
             DataContext = this;
         }
 
@@ -73,6 +73,50 @@ namespace Balatron.Views
             joker.Effect = effectNode?.Value ?? string.Empty;
             joker.SortId = sortIdNode != null && int.TryParse(sortIdNode.Value, out int sid) ? sid : 0;
             joker.Rank = rankNode != null && int.TryParse(rankNode.Value, out int r) ? r : 0;
+            joker.IsNegativeEdition = LuaNodeTreeWindow.HasNegativeEdition(joker.CardNode);
+        }
+
+        private void ToggleNegativeEdition(JokerViewModel joker)
+        {
+            if (joker?.CardNode == null)
+                return;
+
+            var editionNode = joker.CardNode.Children.FirstOrDefault(n => n.Key == "edition");
+
+            if (editionNode != null)
+            {
+                joker.CardNode.Children.Remove(editionNode);
+            }
+            else
+            {
+                editionNode = new LuaNode
+                {
+                    Key = "edition",
+                    Parent = joker.CardNode,
+                    IsTable = true
+                };
+
+                var negativeNode = new LuaNode
+                {
+                    Key = "negative",
+                    Parent = editionNode,
+                    Value = "true"
+                };
+
+                var typeNode = new LuaNode
+                {
+                    Key = "type",
+                    Parent = editionNode,
+                    Value = "\"negative\""
+                };
+
+                editionNode.Children.Add(negativeNode);
+                editionNode.Children.Add(typeNode);
+                joker.CardNode.Children.Add(editionNode);
+            }
+
+            joker.IsNegativeEdition = LuaNodeTreeWindow.HasNegativeEdition(joker.CardNode);
+            _editor.PersistChanges();
         }
     }
 }

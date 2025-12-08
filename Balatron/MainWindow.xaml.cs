@@ -43,11 +43,14 @@ namespace Balatron
             DeflateFile(_originalFilePath, _tempTextFilePath);
             RePopulateTextEditor();
 
+            DirectModificationsPanel.Children.Clear();
+
             SaveButton.IsEnabled = true;
             DataViewerButton.IsEnabled = true;
             OpenJokerListButton.IsEnabled = true;
 
             var editor = Views.LuaNodeTreeWindow.Instance;
+            editor.ReloadFromTempFile();
             editor.Show();
             editor.Activate();
 

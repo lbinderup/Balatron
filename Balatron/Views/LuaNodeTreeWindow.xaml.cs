@@ -50,6 +50,11 @@ namespace Balatron.Views
             }
         }
 
+        public void ReloadFromTempFile()
+        {
+            LoadAndParseLuaFile();
+        }
+
         private void LuaTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             _selectedNode = e.NewValue as LuaNode;
@@ -145,7 +150,7 @@ namespace Balatron.Views
             File.WriteAllText(_tempFilePath, newLuaText, Encoding.ASCII);
         }
         
-        public ObservableCollection<JokerViewModel> GetJokerViewModels(Action<JokerViewModel> importAction, Action<JokerViewModel> exportAction)
+        public ObservableCollection<JokerViewModel> GetJokerViewModels(Action<JokerViewModel> importAction, Action<JokerViewModel> exportAction, Action<JokerViewModel> toggleNegativeAction)
         {
             if (_rootNode == null)
                 return new ObservableCollection<JokerViewModel>();
@@ -171,14 +176,15 @@ namespace Balatron.Views
 
                 var slotIndex = int.TryParse(card.Key, out var keyIndex) ? keyIndex : jokers.Count + 1;
 
-                var joker = new JokerViewModel(importAction, exportAction)
+                var joker = new JokerViewModel(importAction, exportAction, toggleNegativeAction)
                 {
                     Label = labelNode?.Value ?? "Unknown",
                     Effect = effectNode?.Value ?? "",
                     SortId = sortIdNode != null && int.TryParse(sortIdNode.Value, out int sid) ? sid : 0,
                     Rank = rankNode != null && int.TryParse(rankNode.Value, out int r) ? r : 0,
                     CardNode = card,
-                    SlotIndex = slotIndex
+                    SlotIndex = slotIndex,
+                    IsNegativeEdition = HasNegativeEdition(card)
                 };
                 jokers.Add(joker);
             }
@@ -202,7 +208,7 @@ namespace Balatron.Views
             PersistChanges();
         }
 
-        private void PersistChanges()
+        public void PersistChanges()
         {
             var newLuaText = LuaSerializer.Serialize(_rootNode);
             File.WriteAllText(_tempFilePath, newLuaText, Encoding.ASCII);
@@ -211,6 +217,19 @@ namespace Balatron.Views
             {
                 mainWindow.RePopulateTextEditor();
             }
+        }
+
+        public static bool HasNegativeEdition(LuaNode cardNode)
+        {
+            if (cardNode == null)
+                return false;
+
+            var editionNode = cardNode.Children.FirstOrDefault(n => n.Key == "edition");
+            if (editionNode == null)
+                return false;
+
+            var negativeFlag = editionNode.Children.FirstOrDefault(n => n.Key == "negative");
+            return negativeFlag != null && string.Equals(negativeFlag.Value, "true", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

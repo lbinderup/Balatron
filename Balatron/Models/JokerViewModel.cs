@@ -43,6 +43,7 @@ namespace Balatron.Models
 
         public ICommand ExchangeCommand { get; set; }
         public ICommand ExportCommand { get; set; }
+        public ICommand ToggleNegativeCommand { get; set; }
 
         private Action<JokerViewModel> _importAction;
         public Action<JokerViewModel> ImportAction
@@ -66,12 +67,39 @@ namespace Balatron.Models
             }
         }
 
-        public JokerViewModel(Action<JokerViewModel> importAction = null, Action<JokerViewModel> exportAction = null)
+        private Action<JokerViewModel> _toggleNegativeAction;
+        public Action<JokerViewModel> ToggleNegativeAction
+        {
+            get => _toggleNegativeAction;
+            set
+            {
+                _toggleNegativeAction = value;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private bool _isNegativeEdition;
+        public bool IsNegativeEdition
+        {
+            get => _isNegativeEdition;
+            set
+            {
+                _isNegativeEdition = value;
+                OnPropertyChanged(nameof(IsNegativeEdition));
+                OnPropertyChanged(nameof(NegativeToggleLabel));
+            }
+        }
+
+        public string NegativeToggleLabel => IsNegativeEdition ? "Disable Negative" : "Enable Negative";
+
+        public JokerViewModel(Action<JokerViewModel> importAction = null, Action<JokerViewModel> exportAction = null, Action<JokerViewModel> toggleNegativeAction = null)
         {
             ImportAction = importAction;
             ExportAction = exportAction;
+            ToggleNegativeAction = toggleNegativeAction;
             ExchangeCommand = new RelayCommand(_ => ImportAction?.Invoke(this), _ => ImportAction != null);
             ExportCommand = new RelayCommand(_ => ExportAction?.Invoke(this), _ => ExportAction != null);
+            ToggleNegativeCommand = new RelayCommand(_ => ToggleNegativeAction?.Invoke(this), _ => ToggleNegativeAction != null);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
