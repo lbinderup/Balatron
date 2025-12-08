@@ -40,17 +40,17 @@
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0 0 0 4">
                                 <ToggleButton Content="{Binding EternalToggleLabel}"
                                               Command="{Binding ToggleEternalCommand}"
-                                              IsChecked="{Binding IsEternal}"
+                                              IsChecked="{Binding IsEternal, Mode=OneWay}"
                                               Padding="6 2"
                                               Margin="0 4 4 4" />
                                 <ToggleButton Content="{Binding RentalToggleLabel}"
                                               Command="{Binding ToggleRentalCommand}"
-                                              IsChecked="{Binding IsRental}"
+                                              IsChecked="{Binding IsRental, Mode=OneWay}"
                                               Padding="6 2"
                                               Margin="0 4 4 4" />
                                 <ToggleButton Content="{Binding PerishableToggleLabel}"
                                               Command="{Binding TogglePerishableCommand}"
-                                              IsChecked="{Binding IsPerishable}"
+                                              IsChecked="{Binding IsPerishable, Mode=OneWay}"
                                               Padding="6 2"
                                               Margin="0 4 4 4" />
                                 <Button Content="Set Turns"
