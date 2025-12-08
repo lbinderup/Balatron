@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 using System.Windows.Input;
 
@@ -7,7 +8,9 @@ namespace Balatron.Models
     {
         public int SortId { get; set; }
         public int Rank { get; set; }
-        
+
+        public int SlotIndex { get; set; }
+
         private string _label;
         public string Label
         {
@@ -29,16 +32,46 @@ namespace Balatron.Models
             set { _effect = value; OnPropertyChanged(nameof(Effect)); }
         }
 
-        // Command to exchange/modify this joker
-        public ICommand ExchangeCommand { get; set; }
-        
-        public JokerViewModel()
+        private LuaNode _cardNode;
+        public LuaNode CardNode
         {
-            ExchangeCommand = new RelayCommand(ExecuteExchange);
+            get => _cardNode;
+            set { _cardNode = value; OnPropertyChanged(nameof(CardNode)); }
         }
 
-        private void ExecuteExchange(object parameter)
+        public string SlotLabel => $"Slot {SlotIndex}";
+
+        public ICommand ExchangeCommand { get; set; }
+        public ICommand ExportCommand { get; set; }
+
+        private Action<JokerViewModel> _importAction;
+        public Action<JokerViewModel> ImportAction
         {
+            get => _importAction;
+            set
+            {
+                _importAction = value;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private Action<JokerViewModel> _exportAction;
+        public Action<JokerViewModel> ExportAction
+        {
+            get => _exportAction;
+            set
+            {
+                _exportAction = value;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        public JokerViewModel(Action<JokerViewModel> importAction = null, Action<JokerViewModel> exportAction = null)
+        {
+            ImportAction = importAction;
+            ExportAction = exportAction;
+            ExchangeCommand = new RelayCommand(_ => ImportAction?.Invoke(this), _ => ImportAction != null);
+            ExportCommand = new RelayCommand(_ => ExportAction?.Invoke(this), _ => ExportAction != null);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

@@ -80,8 +80,7 @@ namespace Balatron
             var editor = Views.LuaNodeTreeWindow.Instance;
             if (editor != null)
             {
-                var jokers = editor.GetJokerViewModels();
-                var jokerWindow = new Views.JokerListWindow(jokers);
+                var jokerWindow = new Views.JokerListWindow(editor);
                 jokerWindow.Show();
             }
         }

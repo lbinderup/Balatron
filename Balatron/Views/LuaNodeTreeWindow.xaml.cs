@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -144,8 +145,11 @@ namespace Balatron.Views
             File.WriteAllText(_tempFilePath, newLuaText, Encoding.ASCII);
         }
         
-        public ObservableCollection<JokerViewModel> GetJokerViewModels()
+        public ObservableCollection<JokerViewModel> GetJokerViewModels(Action<JokerViewModel> importAction, Action<JokerViewModel> exportAction)
         {
+            if (_rootNode == null)
+                return new ObservableCollection<JokerViewModel>();
+
             var jokers = new ObservableCollection<JokerViewModel>();
 
             // Navigate to the node "cardAreas" -> "jokers" -> "cards"
@@ -165,16 +169,48 @@ namespace Balatron.Views
                 var sortIdNode = card.Children.FirstOrDefault(n => n.Key == "sort_id");
                 var rankNode = card.Children.FirstOrDefault(n => n.Key == "rank");
 
-                var joker = new JokerViewModel
+                var slotIndex = int.TryParse(card.Key, out var keyIndex) ? keyIndex : jokers.Count + 1;
+
+                var joker = new JokerViewModel(importAction, exportAction)
                 {
                     Label = labelNode?.Value ?? "Unknown",
                     Effect = effectNode?.Value ?? "",
                     SortId = sortIdNode != null && int.TryParse(sortIdNode.Value, out int sid) ? sid : 0,
                     Rank = rankNode != null && int.TryParse(rankNode.Value, out int r) ? r : 0,
+                    CardNode = card,
+                    SlotIndex = slotIndex
                 };
                 jokers.Add(joker);
             }
             return jokers;
+        }
+
+        public void ReplaceJoker(LuaNode originalJoker, LuaNode newJoker)
+        {
+            if (originalJoker?.Parent == null || newJoker == null)
+                return;
+
+            var parent = originalJoker.Parent;
+            var index = parent.Children.IndexOf(originalJoker);
+            if (index < 0)
+                return;
+
+            newJoker.Key = originalJoker.Key;
+            newJoker.Parent = parent;
+            parent.Children[index] = newJoker;
+
+            PersistChanges();
+        }
+
+        private void PersistChanges()
+        {
+            var newLuaText = LuaSerializer.Serialize(_rootNode);
+            File.WriteAllText(_tempFilePath, newLuaText, Encoding.ASCII);
+
+            if (Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.RePopulateTextEditor();
+            }
         }
     }
 }
