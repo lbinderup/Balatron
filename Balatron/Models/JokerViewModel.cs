@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace Balatron.Models
 {
@@ -120,6 +123,17 @@ namespace Balatron.Models
         {
             get => _centerKey;
             set { _centerKey = value; OnPropertyChanged(nameof(CenterKey)); }
+        }
+
+        private ObservableCollection<ImageSource> _spriteLayers = new();
+        public ObservableCollection<ImageSource> SpriteLayers
+        {
+            get => _spriteLayers;
+            set
+            {
+                _spriteLayers = value ?? new ObservableCollection<ImageSource>();
+                OnPropertyChanged(nameof(SpriteLayers));
+            }
         }
 
         private string _effect;
@@ -298,6 +312,18 @@ namespace Balatron.Models
             EditPerishTallyCommand = new RelayCommand(_ => EditPerishTallyAction?.Invoke(this), _ => EditPerishTallyAction != null);
             EditSellCostCommand = new RelayCommand(_ => EditSellCostAction?.Invoke(this), _ => EditSellCostAction != null);
             SetEditionCommand = new RelayCommand(param => SetEditionAction?.Invoke(this, param as string), _ => SetEditionAction != null);
+        }
+
+        public void SetSpriteLayers(IEnumerable<ImageSource> layers)
+        {
+            SpriteLayers.Clear();
+            if (layers == null)
+                return;
+
+            foreach (var layer in layers)
+            {
+                SpriteLayers.Add(layer);
+            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

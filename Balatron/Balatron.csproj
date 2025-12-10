@@ -7,8 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Resources\app_icon.ico" />
-    <Resource Include="Resources\app_icon.ico" />
+    <None Remove="Resources\\app_icon.ico" />
+    <None Remove="Resources\\Jokers.png" />
+    <Resource Include="Resources\\app_icon.ico" />
+    <Resource Include="Resources\\Jokers.png" />
   </ItemGroup>
 
 </Project>

@@ -328,6 +328,8 @@ namespace Balatron.Views
             var effectNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "effect");
             var sortIdNode = cardNode.Children.FirstOrDefault(n => n.Key == "sort_id");
             var rankNode = cardNode.Children.FirstOrDefault(n => n.Key == "rank");
+            var saveFieldsNode = cardNode.Children.FirstOrDefault(n => n.Key == "save_fields");
+            var centerNode = saveFieldsNode?.Children.FirstOrDefault(n => n.Key == "center");
             var eternalNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "eternal");
             var rentalNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "rental");
             var perishableNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "perishable");
@@ -341,6 +343,7 @@ namespace Balatron.Views
             joker.Effect = effectNode?.Value ?? string.Empty;
             joker.SortId = sortIdNode != null && int.TryParse(sortIdNode.Value, out int sid) ? sid : 0;
             joker.Rank = rankNode != null && int.TryParse(rankNode.Value, out int r) ? r : 0;
+            joker.CenterKey = centerNode?.Value?.Trim('"') ?? string.Empty;
             joker.IsEternal = eternalNode != null && string.Equals(eternalNode.Value, "true", StringComparison.OrdinalIgnoreCase);
             joker.IsRental = rentalNode != null && string.Equals(rentalNode.Value, "true", StringComparison.OrdinalIgnoreCase);
             joker.IsPerishable = perishableNode != null && string.Equals(perishableNode.Value, "true", StringComparison.OrdinalIgnoreCase);
@@ -350,6 +353,7 @@ namespace Balatron.Views
             joker.BaseCost = baseCostNode != null && int.TryParse(baseCostNode.Value, out int bc) ? bc : 0;
             joker.ExtraCost = extraCostNode != null && int.TryParse(extraCostNode.Value, out int ec) ? ec : 0;
             joker.SetSelectedEditionSilently(GetEditionType(cardNode));
+            joker.SetSpriteLayers(JokerSpriteService.GetSpriteLayers(joker.CenterKey));
         }
     }
 }
