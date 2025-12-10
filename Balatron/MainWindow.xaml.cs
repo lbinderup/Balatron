@@ -48,11 +48,10 @@ namespace Balatron
             SaveButton.IsEnabled = true;
             DataViewerButton.IsEnabled = true;
             OpenJokerListButton.IsEnabled = true;
+            OpenShopJokerListButton.IsEnabled = true;
 
             var editor = Views.LuaNodeTreeWindow.Instance;
             editor.ReloadFromTempFile();
-            editor.Show();
-            editor.Activate();
 
             AddDirectModificationEntry("Dollars", "GAME.dollars");
             AddDirectModificationEntry("Max Jokers", "cardAreas.jokers.config.card_limit");
@@ -85,6 +84,16 @@ namespace Balatron
             {
                 var jokerWindow = new Views.JokerListWindow(editor);
                 jokerWindow.Show();
+            }
+        }
+
+        private void OpenShopJokerListButton_Click(object sender, RoutedEventArgs e)
+        {
+            var editor = Views.LuaNodeTreeWindow.Instance;
+            if (editor != null)
+            {
+                var shopWindow = new Views.ShopJokerWindow(editor);
+                shopWindow.Show();
             }
         }
 

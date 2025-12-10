@@ -72,6 +72,42 @@ namespace Balatron.Models
             }
         }
 
+        private int _cost;
+        public int Cost
+        {
+            get => _cost;
+            set
+            {
+                _cost = value;
+                OnPropertyChanged(nameof(Cost));
+                OnPropertyChanged(nameof(CostLabel));
+            }
+        }
+
+        private int _baseCost;
+        public int BaseCost
+        {
+            get => _baseCost;
+            set
+            {
+                _baseCost = value;
+                OnPropertyChanged(nameof(BaseCost));
+                OnPropertyChanged(nameof(BaseCostLabel));
+            }
+        }
+
+        private int _extraCost;
+        public int ExtraCost
+        {
+            get => _extraCost;
+            set
+            {
+                _extraCost = value;
+                OnPropertyChanged(nameof(ExtraCost));
+                OnPropertyChanged(nameof(ExtraCostLabel));
+            }
+        }
+
         private string _label;
         public string Label
         {
@@ -204,6 +240,9 @@ namespace Balatron.Models
         public string PerishableLabel => IsPerishable ? $"Perishable ({PerishTally} turns)" : "Perishable: Off";
         public string PerishableToggleLabel => IsPerishable ? "☑ Perishable" : "☐ Perishable";
         public string SellCostLabel => $"Sell Cost: {SellCost}";
+        public string CostLabel => $"Cost: {Cost}";
+        public string BaseCostLabel => $"Base Cost: {BaseCost}";
+        public string ExtraCostLabel => $"Extra Cost: {ExtraCost}";
 
         public string[] EditionOptions { get; } = { "None", "Negative", "Foil", "Holographic", "Polychrome" };
 

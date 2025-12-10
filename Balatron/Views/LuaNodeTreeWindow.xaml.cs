@@ -160,61 +160,38 @@ namespace Balatron.Views
             Action<JokerViewModel> editSellCostAction,
             Action<JokerViewModel, string> setEditionAction)
         {
-            if (_rootNode == null)
-                return new ObservableCollection<JokerViewModel>();
-
             var jokers = new ObservableCollection<JokerViewModel>();
 
-            // Navigate to the node "cardAreas" -> "jokers" -> "cards"
-            var cardAreas = _rootNode.Children.FirstOrDefault(n => n.Key == "cardAreas");
-            if (cardAreas == null) return jokers;
-            var jokersNode = cardAreas.Children.FirstOrDefault(n => n.Key == "jokers");
-            if (jokersNode == null) return jokers;
-            var cardsNode = jokersNode.Children.FirstOrDefault(n => n.Key == "cards");
+            var cardsNode = GetCardsNode("jokers");
             if (cardsNode == null) return jokers;
 
-            // Iterate over the children of "cards" and convert each into a JokerViewModel.
             foreach (var card in cardsNode.Children)
             {
-                var labelNode = card.Children.FirstOrDefault(n => n.Key == "label");
-                var abilityNode = card.Children.FirstOrDefault(n => n.Key == "ability");
-                var effectNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "effect");
-                var sortIdNode = card.Children.FirstOrDefault(n => n.Key == "sort_id");
-                var rankNode = card.Children.FirstOrDefault(n => n.Key == "rank");
-                var eternalNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "eternal");
-                var rentalNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "rental");
-                var perishableNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "perishable");
-                var perishTallyNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "perish_tally");
-                var sellCostNode = card.Children.FirstOrDefault(n => n.Key == "sell_cost");
-
                 var slotIndex = int.TryParse(card.Key, out var keyIndex) ? keyIndex : jokers.Count + 1;
-
-                var joker = new JokerViewModel(
-                    importAction,
-                    exportAction,
-                    toggleEternalAction,
-                    toggleRentalAction,
-                    togglePerishableAction,
-                    editPerishTallyAction,
-                    editSellCostAction,
-                    setEditionAction)
-                {
-                    Label = labelNode?.Value ?? "Unknown",
-                    Effect = effectNode?.Value ?? "",
-                    SortId = sortIdNode != null && int.TryParse(sortIdNode.Value, out int sid) ? sid : 0,
-                    Rank = rankNode != null && int.TryParse(rankNode.Value, out int r) ? r : 0,
-                    CardNode = card,
-                    SlotIndex = slotIndex,
-                    IsEternal = eternalNode != null && string.Equals(eternalNode.Value, "true", StringComparison.OrdinalIgnoreCase),
-                    IsRental = rentalNode != null && string.Equals(rentalNode.Value, "true", StringComparison.OrdinalIgnoreCase),
-                    IsPerishable = perishableNode != null && string.Equals(perishableNode.Value, "true", StringComparison.OrdinalIgnoreCase),
-                    PerishTally = perishTallyNode != null && int.TryParse(perishTallyNode.Value, out int pt) ? pt : 0,
-                    SellCost = sellCostNode != null && int.TryParse(sellCostNode.Value, out int sc) ? sc : 0
-                };
-                joker.SetSelectedEditionSilently(GetEditionType(card));
+                var joker = CreateJokerViewModel(card, slotIndex, importAction, exportAction, toggleEternalAction,
+                    toggleRentalAction, togglePerishableAction, editPerishTallyAction, editSellCostAction, setEditionAction);
                 jokers.Add(joker);
             }
             return jokers;
+        }
+
+        public ObservableCollection<JokerViewModel> GetShopJokerViewModels(
+            Action<JokerViewModel> importAction,
+            Action<JokerViewModel> exportAction)
+        {
+            var shopJokers = new ObservableCollection<JokerViewModel>();
+
+            var cardsNode = GetCardsNode("shop_jokers");
+            if (cardsNode == null) return shopJokers;
+
+            foreach (var card in cardsNode.Children)
+            {
+                var slotIndex = int.TryParse(card.Key, out var keyIndex) ? keyIndex : shopJokers.Count + 1;
+                var joker = CreateJokerViewModel(card, slotIndex, importAction, exportAction, null, null, null, null, null, null);
+                shopJokers.Add(joker);
+            }
+
+            return shopJokers;
         }
 
         public void ReplaceJoker(LuaNode originalJoker, LuaNode newJoker)
@@ -243,6 +220,11 @@ namespace Balatron.Views
             {
                 mainWindow.RePopulateTextEditor();
             }
+        }
+
+        public void RefreshJokerMetadata(JokerViewModel joker)
+        {
+            PopulateJokerMetadata(joker?.CardNode, joker);
         }
 
         public static bool HasNegativeEdition(LuaNode cardNode)
@@ -284,6 +266,90 @@ namespace Balatron.Views
                 return "Polychrome";
 
             return "None";
+        }
+
+        public static string SanitizeFileName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return "joker";
+
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var cleaned = string.Join("_", name.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries)).Trim();
+            return string.IsNullOrWhiteSpace(cleaned) ? "joker" : cleaned;
+        }
+
+        private LuaNode GetCardsNode(string areaKey)
+        {
+            var cardAreas = _rootNode?.Children.FirstOrDefault(n => n.Key == "cardAreas");
+            if (cardAreas == null)
+                return null;
+
+            var targetArea = cardAreas.Children.FirstOrDefault(n => n.Key == areaKey);
+            return targetArea?.Children.FirstOrDefault(n => n.Key == "cards");
+        }
+
+        private JokerViewModel CreateJokerViewModel(
+            LuaNode card,
+            int slotIndex,
+            Action<JokerViewModel> importAction,
+            Action<JokerViewModel> exportAction,
+            Action<JokerViewModel> toggleEternalAction,
+            Action<JokerViewModel> toggleRentalAction,
+            Action<JokerViewModel> togglePerishableAction,
+            Action<JokerViewModel> editPerishTallyAction,
+            Action<JokerViewModel> editSellCostAction,
+            Action<JokerViewModel, string> setEditionAction)
+        {
+            var joker = new JokerViewModel(
+                importAction,
+                exportAction,
+                toggleEternalAction,
+                toggleRentalAction,
+                togglePerishableAction,
+                editPerishTallyAction,
+                editSellCostAction,
+                setEditionAction)
+            {
+                CardNode = card,
+                SlotIndex = slotIndex
+            };
+
+            PopulateJokerMetadata(card, joker);
+            return joker;
+        }
+
+        private static void PopulateJokerMetadata(LuaNode cardNode, JokerViewModel joker)
+        {
+            if (cardNode == null || joker == null)
+                return;
+
+            var labelNode = cardNode.Children.FirstOrDefault(n => n.Key == "label");
+            var abilityNode = cardNode.Children.FirstOrDefault(n => n.Key == "ability");
+            var effectNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "effect");
+            var sortIdNode = cardNode.Children.FirstOrDefault(n => n.Key == "sort_id");
+            var rankNode = cardNode.Children.FirstOrDefault(n => n.Key == "rank");
+            var eternalNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "eternal");
+            var rentalNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "rental");
+            var perishableNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "perishable");
+            var perishTallyNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "perish_tally");
+            var sellCostNode = cardNode.Children.FirstOrDefault(n => n.Key == "sell_cost");
+            var costNode = cardNode.Children.FirstOrDefault(n => n.Key == "cost");
+            var baseCostNode = cardNode.Children.FirstOrDefault(n => n.Key == "base_cost");
+            var extraCostNode = cardNode.Children.FirstOrDefault(n => n.Key == "extra_cost");
+
+            joker.Label = labelNode?.Value ?? "Unknown";
+            joker.Effect = effectNode?.Value ?? string.Empty;
+            joker.SortId = sortIdNode != null && int.TryParse(sortIdNode.Value, out int sid) ? sid : 0;
+            joker.Rank = rankNode != null && int.TryParse(rankNode.Value, out int r) ? r : 0;
+            joker.IsEternal = eternalNode != null && string.Equals(eternalNode.Value, "true", StringComparison.OrdinalIgnoreCase);
+            joker.IsRental = rentalNode != null && string.Equals(rentalNode.Value, "true", StringComparison.OrdinalIgnoreCase);
+            joker.IsPerishable = perishableNode != null && string.Equals(perishableNode.Value, "true", StringComparison.OrdinalIgnoreCase);
+            joker.PerishTally = perishTallyNode != null && int.TryParse(perishTallyNode.Value, out int pt) ? pt : 0;
+            joker.SellCost = sellCostNode != null && int.TryParse(sellCostNode.Value, out int sc) ? sc : 0;
+            joker.Cost = costNode != null && int.TryParse(costNode.Value, out int c) ? c : 0;
+            joker.BaseCost = baseCostNode != null && int.TryParse(baseCostNode.Value, out int bc) ? bc : 0;
+            joker.ExtraCost = extraCostNode != null && int.TryParse(extraCostNode.Value, out int ec) ? ec : 0;
+            joker.SetSelectedEditionSilently(GetEditionType(cardNode));
         }
     }
 }

@@ -37,7 +37,7 @@ namespace Balatron.Views
             var saveFileDialog = new SaveFileDialog
             {
                 Filter = "Joker JSON (*.json)|*.json",
-                FileName = $"{SanitizeFileName(joker.Label)}.json"
+                FileName = $"{LuaNodeTreeWindow.SanitizeFileName(joker.Label)}.json"
             };
 
             if (saveFileDialog.ShowDialog() == true)
@@ -66,36 +66,8 @@ namespace Balatron.Views
 
             _editor.ReplaceJoker(joker.CardNode, imported);
             joker.CardNode = imported;
-            UpdateJokerMetadata(joker);
+            _editor.RefreshJokerMetadata(joker);
             MessageBox.Show("Joker imported into the slot.", "Import", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void UpdateJokerMetadata(JokerViewModel joker)
-        {
-            if (joker.CardNode == null)
-                return;
-
-            var labelNode = joker.CardNode.Children.FirstOrDefault(n => n.Key == "label");
-            var abilityNode = joker.CardNode.Children.FirstOrDefault(n => n.Key == "ability");
-            var effectNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "effect");
-            var sortIdNode = joker.CardNode.Children.FirstOrDefault(n => n.Key == "sort_id");
-            var rankNode = joker.CardNode.Children.FirstOrDefault(n => n.Key == "rank");
-            var eternalNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "eternal");
-            var rentalNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "rental");
-            var perishableNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "perishable");
-            var perishTallyNode = abilityNode?.Children.FirstOrDefault(n => n.Key == "perish_tally");
-            var sellCostNode = joker.CardNode.Children.FirstOrDefault(n => n.Key == "sell_cost");
-
-            joker.Label = labelNode?.Value ?? "Unknown";
-            joker.Effect = effectNode?.Value ?? string.Empty;
-            joker.SortId = sortIdNode != null && int.TryParse(sortIdNode.Value, out int sid) ? sid : 0;
-            joker.Rank = rankNode != null && int.TryParse(rankNode.Value, out int r) ? r : 0;
-            joker.IsEternal = eternalNode != null && string.Equals(eternalNode.Value, "true", System.StringComparison.OrdinalIgnoreCase);
-            joker.IsRental = rentalNode != null && string.Equals(rentalNode.Value, "true", System.StringComparison.OrdinalIgnoreCase);
-            joker.IsPerishable = perishableNode != null && string.Equals(perishableNode.Value, "true", System.StringComparison.OrdinalIgnoreCase);
-            joker.PerishTally = perishTallyNode != null && int.TryParse(perishTallyNode.Value, out int pt) ? pt : 0;
-            joker.SellCost = sellCostNode != null && int.TryParse(sellCostNode.Value, out int sc) ? sc : 0;
-            joker.SetSelectedEditionSilently(LuaNodeTreeWindow.GetEditionType(joker.CardNode));
         }
 
         private static LuaNode GetAbilityNode(JokerViewModel joker)
@@ -280,16 +252,6 @@ namespace Balatron.Views
                 joker.SellCost = newSellCost;
                 _editor.PersistChanges();
             }
-        }
-
-        private static string SanitizeFileName(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                return "joker";
-
-            var invalidChars = Path.GetInvalidFileNameChars();
-            var cleaned = string.Join("_", name.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries)).Trim();
-            return string.IsNullOrWhiteSpace(cleaned) ? "joker" : cleaned;
         }
 
         private void SetEdition(JokerViewModel joker, string edition)

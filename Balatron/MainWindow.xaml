@@ -16,6 +16,7 @@
             <Button Name="SaveButton" Content="Save" Click="SaveButton_Click" IsEnabled="False" Margin="0,0,0,10"/>
             <StackPanel Name="DirectModificationsPanel" Margin="0,10,0,0"/>
             <Button Name="OpenJokerListButton" Content="View Jokers" Click="OpenJokerListButton_Click" IsEnabled="False" Margin="0,10,0,10"/>
+            <Button Name="OpenShopJokerListButton" Content="View Shop Jokers" Click="OpenShopJokerListButton_Click" IsEnabled="False" Margin="0,0,0,10"/>
             <TextBox Name="TextEditor" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Height="200"/>
             <Button Name="DataViewerButton" Content="Lua Node Tree Editor" Click="LuaNodeTreeViewerButton_Click" IsEnabled="False" Margin="0,10,0,10"/>
         </StackPanel>
