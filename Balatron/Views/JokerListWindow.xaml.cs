@@ -1,7 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -32,7 +31,7 @@ namespace Balatron.Views
             DataContext = this;
         }
 
-        private void ExportJoker(JokerViewModel joker)
+        private static void ExportJoker(JokerViewModel joker)
         {
             var saveFileDialog = new SaveFileDialog
             {
@@ -43,7 +42,6 @@ namespace Balatron.Views
             if (saveFileDialog.ShowDialog() == true)
             {
                 JokerFileService.ExportJoker(joker.CardNode, saveFileDialog.FileName);
-                MessageBox.Show("Joker exported successfully.", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
@@ -67,7 +65,6 @@ namespace Balatron.Views
             _editor.ReplaceJoker(joker.CardNode, imported);
             joker.CardNode = imported;
             _editor.RefreshJokerMetadata(joker);
-            MessageBox.Show("Joker imported into the slot.", "Import", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private static LuaNode GetAbilityNode(JokerViewModel joker)

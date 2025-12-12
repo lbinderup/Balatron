@@ -4,13 +4,13 @@
         xmlns:models="clr-namespace:Balatron.Models"
         Title="Joker List" Height="350" Width="700">
     <Window.Icon>
-        <BitmapImage UriSource="pack://application:,,,/Balatron;component/Resources/app_icon.ico"/>
+        <BitmapImage UriSource="pack://application:,,,/Balatron;component/Resources/app_icon.ico" />
     </Window.Icon>
     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
         <ItemsControl ItemsSource="{Binding Jokers}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal"/>
+                    <StackPanel Orientation="Horizontal" />
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
@@ -24,32 +24,60 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Border Width="85"
-                                    Height="114"
-                                    Margin="0 0 10 0"
-                                    VerticalAlignment="Top"
-                                    Background="#11000000"
-                                    ClipToBounds="True">
-                                <Grid>
-                                    <ItemsControl ItemsSource="{Binding SpriteLayers}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <Grid />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Image Source="{Binding}"
-                                                       HorizontalAlignment="Stretch"
-                                                       VerticalAlignment="Stretch"
-                                                       Stretch="Uniform"
-                                                       RenderOptions.BitmapScalingMode="NearestNeighbor" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Grid>
-                            </Border>
-                            <StackPanel Grid.Column="1" MinWidth="180">
+
+                            <StackPanel Grid.Column="0" Margin="0 0 10 0">
+                                <Border Width="85"
+                                        Height="114"
+                                        HorizontalAlignment="Center"
+                                        Background="#11000000"
+                                        ClipToBounds="True">
+                                    <Grid>
+                                        <ItemsControl ItemsSource="{Binding SpriteLayers}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <Grid />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Image Source="{Binding}"
+                                                           HorizontalAlignment="Stretch"
+                                                           VerticalAlignment="Stretch"
+                                                           Stretch="Uniform"
+                                                           RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+                                </Border>
+
+                                <UniformGrid Columns="1" Margin="0 4 0 4">
+                                    <ToggleButton Content="{Binding EternalToggleLabel}"
+                                                  Command="{Binding ToggleEternalCommand}"
+                                                  IsChecked="{Binding IsEternal, Mode=OneWay}"
+                                                  Padding="2" Margin="1" />
+                                    <ToggleButton Content="{Binding RentalToggleLabel}"
+                                                  Command="{Binding ToggleRentalCommand}"
+                                                  IsChecked="{Binding IsRental, Mode=OneWay}"
+                                                  Padding="2" Margin="1" />
+                                    <ToggleButton Content="{Binding PerishableToggleLabel}"
+                                                  Command="{Binding TogglePerishableCommand}"
+                                                  IsChecked="{Binding IsPerishable, Mode=OneWay}"
+                                                  Padding="2" Margin="1" />
+                                    <Button Content="Turns"
+                                            Command="{Binding EditPerishTallyCommand}"
+                                            ToolTip="Set Perishable Turns"
+                                            Padding="2" Margin="1" />
+                                </UniformGrid>
+                                
+                                <TextBlock Text="{Binding PerishableLabel}"
+                                           TextAlignment="Center"
+                                           FontSize="10"
+                                           TextWrapping="Wrap"
+                                           MaxWidth="90" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" MinWidth="150" VerticalAlignment="Top">
                                 <TextBlock Text="{Binding SlotLabel}"
                                            FontWeight="Bold"
                                            TextAlignment="Left"
@@ -57,64 +85,55 @@
                                 <TextBlock Text="{Binding Label}"
                                            TextAlignment="Left"
                                            Padding="0 0 0 4" />
-                                <TextBlock Text="{Binding Effect}"
-                                           TextWrapping="Wrap"
-                                           TextAlignment="Left"
-                                           Padding="0 0 0 6" />
+                                
                                 <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
                                     <TextBlock Text="Rank:" />
                                     <TextBlock Text="{Binding Rank}" Margin="4 0 10 0" />
                                     <TextBlock Text="Sort:" />
                                     <TextBlock Text="{Binding SortId}" Margin="4 0 0 0" />
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
-                                    <ToggleButton Content="{Binding EternalToggleLabel}"
-                                                  Command="{Binding ToggleEternalCommand}"
-                                                  IsChecked="{Binding IsEternal, Mode=OneWay}"
-                                                  Padding="6 2"
-                                                  Margin="0 4 4 4" />
-                                    <ToggleButton Content="{Binding RentalToggleLabel}"
-                                                  Command="{Binding ToggleRentalCommand}"
-                                                  IsChecked="{Binding IsRental, Mode=OneWay}"
-                                                  Padding="6 2"
-                                                  Margin="0 4 4 4" />
-                                    <ToggleButton Content="{Binding PerishableToggleLabel}"
-                                                  Command="{Binding TogglePerishableCommand}"
-                                                  IsChecked="{Binding IsPerishable, Mode=OneWay}"
-                                                  Padding="6 2"
-                                                  Margin="0 4 4 4" />
-                                    <Button Content="Set Turns"
-                                            Command="{Binding EditPerishTallyCommand}"
-                                            Padding="6 2"
-                                            Margin="0 4 0 4" />
-                                </StackPanel>
-                                <TextBlock Text="{Binding PerishableLabel}"
-                                           TextAlignment="Left"
-                                           Margin="0 0 0 6" />
-                                <StackPanel Orientation="Vertical" Margin="0 0 0 6">
-                                    <TextBlock Text="Edition" TextAlignment="Left" />
-                                    <ComboBox ItemsSource="{Binding EditionOptions}"
+
+                                <Grid Margin="0 0 0 6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" 
+                                               Text="Edition" 
+                                               VerticalAlignment="Center" 
+                                               Margin="0 0 10 0"/>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding EditionOptions}"
                                               SelectedItem="{Binding SelectedEdition}"
-                                              HorizontalAlignment="Left"
-                                              Width="140"
-                                              Margin="0 4 0 0" />
-                                </StackPanel>
-                                <Button Content="Import Joker"
-                                        Command="{Binding ExchangeCommand}"
-                                        HorizontalAlignment="Stretch"
-                                        Padding="3 0 3 0"
-                                        Margin="0 0 0 4" />
-                                <Button Content="Export Joker"
-                                        Command="{Binding ExportCommand}"
-                                        HorizontalAlignment="Stretch"
-                                        Padding="3 0 3 0"
-                                        Margin="0 0 0 4" />
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0 4 0 0">
+                                              HorizontalAlignment="Stretch" />
+                                </Grid>
+
+                                <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
                                     <TextBlock Text="{Binding SellCostLabel}" Margin="0 0 6 0" />
                                     <Button Content="Edit"
                                             Command="{Binding EditSellCostCommand}"
                                             Padding="3 0 3 0" />
                                 </StackPanel>
+
+                                <TextBlock Text="Exchange"
+                                           FontWeight="Bold"
+                                           TextAlignment="Left"
+                                           Padding="0 10 0 4" />
+                                <Grid Margin="0 0 0 0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0" 
+                                            Content="Import"
+                                            Command="{Binding ExchangeCommand}"
+                                            Margin="0 0 3 0"/>
+                                    <Button Grid.Column="1" 
+                                            Content="Export"
+                                            Command="{Binding ExportCommand}"
+                                            Margin="3 0 0 0"/>
+                                </Grid>
+                                
                             </StackPanel>
                         </Grid>
                     </Border>

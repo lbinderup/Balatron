@@ -62,7 +62,7 @@ namespace Balatron.Services
             {
                 var image = new BitmapImage();
                 image.BeginInit();
-                image.UriSource = new Uri("pack://application:,,,/Balatron;component/Resources/Jokers.png", UriKind.Absolute);
+                image.UriSource = new Uri("pack://application:,,,/Balatron;component/Resources/joker_art.png", UriKind.Absolute);
                 image.CacheOption = BitmapCacheOption.OnLoad;
                 image.EndInit();
                 image.Freeze();

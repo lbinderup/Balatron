@@ -8,9 +8,10 @@
 
   <ItemGroup>
     <None Remove="Resources\\app_icon.ico" />
-    <None Remove="Resources\\Jokers.png" />
+    <None Remove="Resources\\joker_art.png" />
+    <None Include="Resources\joker_art.png" />
     <Resource Include="Resources\\app_icon.ico" />
-    <Resource Include="Resources\\Jokers.png" />
+    <Resource Include="Resources\\joker_art.png" />
   </ItemGroup>
 
 </Project>
