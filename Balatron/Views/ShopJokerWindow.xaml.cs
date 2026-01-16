@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Input;
 using Microsoft.Win32;
 using Balatron.Models;
 using Balatron.Services;
@@ -59,6 +60,24 @@ namespace Balatron.Views
             joker.CardNode = imported;
             _editor.RefreshJokerMetadata(joker);
             MessageBox.Show("Joker imported into the shop slot.", "Import", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount > 1)
+                return;
+
+            DragMove();
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState.Minimized;
         }
     }
 }

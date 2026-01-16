@@ -2,91 +2,140 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:models="clr-namespace:Balatron.Models"
-        Title="Shop Jokers" Height="300" Width="650">
+        Title="Shop Jokers"
+        Height="520"
+        Width="720"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="CanResize">
     <Window.Icon>
         <BitmapImage UriSource="pack://application:,,,/Balatron;component/Resources/app_icon.ico"/>
     </Window.Icon>
-    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-        <ItemsControl ItemsSource="{Binding ShopJokers}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal"/>
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="{x:Type models:JokerViewModel}">
-                    <Border BorderBrush="Gray"
-                            BorderThickness="1"
-                            Padding="5"
-                            Margin="5">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Border Width="85"
-                                    Height="114"
-                                    Margin="0 0 10 0"
-                                    VerticalAlignment="Top"
-                                    Background="#11000000"
-                                    ClipToBounds="True">
+    <Border Margin="12"
+            Background="{StaticResource BalatroDark}"
+            BorderBrush="{StaticResource BalatroShadow}"
+            BorderThickness="3"
+            CornerRadius="18">
+        <Grid TextElement.Foreground="{StaticResource BalatroWhite}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid Background="{StaticResource BalatroPanel}"
+                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Shop Jokers"
+                           VerticalAlignment="Center"
+                           FontSize="18"
+                           Margin="16,0,0,0" />
+                <Button Grid.Column="1"
+                        Content="—"
+                        Width="36"
+                        Height="28"
+                        Margin="0,8,8,8"
+                        Background="{StaticResource BalatroBlue}"
+                        Click="MinimizeButton_Click" />
+                <Button Grid.Column="2"
+                        Content="X"
+                        Width="36"
+                        Height="28"
+                        Margin="0,8,12,8"
+                        Background="{StaticResource BalatroRed}"
+                        Click="CloseButton_Click" />
+            </Grid>
+            <ScrollViewer Grid.Row="1"
+                          Margin="16"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding ShopJokers}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type models:JokerViewModel}">
+                            <Border BorderBrush="{StaticResource BalatroShadow}"
+                                    BorderThickness="2"
+                                    Background="{StaticResource BalatroPanel}"
+                                    Padding="8"
+                                    Margin="6"
+                                    CornerRadius="12">
                                 <Grid>
-                                    <ItemsControl ItemsSource="{Binding SpriteLayers}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <Grid />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Image Source="{Binding}"
-                                                       HorizontalAlignment="Stretch"
-                                                       VerticalAlignment="Stretch"
-                                                       Stretch="Uniform"
-                                                       RenderOptions.BitmapScalingMode="NearestNeighbor" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="85"
+                                            Height="114"
+                                            Margin="0 0 10 0"
+                                            VerticalAlignment="Top"
+                                            Background="#11000000"
+                                            ClipToBounds="True">
+                                        <Grid>
+                                            <ItemsControl ItemsSource="{Binding SpriteLayers}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <Grid />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Image Source="{Binding}"
+                                                               HorizontalAlignment="Stretch"
+                                                               VerticalAlignment="Stretch"
+                                                               Stretch="Uniform"
+                                                               RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Grid>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" MinWidth="200">
+                                        <TextBlock Text="{Binding SlotLabel}"
+                                                   TextAlignment="Left"
+                                                   Padding="0 0 0 4" />
+                                        <TextBlock Text="{Binding Label}"
+                                                   TextAlignment="Left"
+                                                   Padding="0 0 0 4" />
+                                        <TextBlock Text="{Binding Effect}"
+                                                   TextWrapping="Wrap"
+                                                   TextAlignment="Left"
+                                                   Padding="0 0 0 6" />
+                                        <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
+                                            <TextBlock Text="Rank:" />
+                                            <TextBlock Text="{Binding Rank}" Margin="4 0 10 0" />
+                                            <TextBlock Text="Sort:" />
+                                            <TextBlock Text="{Binding SortId}" Margin="4 0 0 0" />
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0 0 0 6">
+                                            <TextBlock Text="{Binding CostLabel}" Margin="0 0 6 0" />
+                                            <TextBlock Text="{Binding BaseCostLabel}" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding ExtraCostLabel}"
+                                                   TextAlignment="Left"
+                                                   Margin="0 0 0 6" />
+                                        <Button Content="Import Joker"
+                                                Command="{Binding ExchangeCommand}"
+                                                HorizontalAlignment="Stretch"
+                                                Padding="6 2"
+                                                Margin="0 0 0 4" />
+                                        <Button Content="Export Joker"
+                                                Command="{Binding ExportCommand}"
+                                                HorizontalAlignment="Stretch"
+                                                Padding="6 2" />
+                                    </StackPanel>
                                 </Grid>
                             </Border>
-                            <StackPanel Grid.Column="1" MinWidth="200">
-                                <TextBlock Text="{Binding SlotLabel}"
-                                           TextAlignment="Left"
-                                           Padding="0 0 0 4" />
-                                <TextBlock Text="{Binding Label}"
-                                           TextAlignment="Left"
-                                           Padding="0 0 0 4" />
-                                <TextBlock Text="{Binding Effect}"
-                                           TextWrapping="Wrap"
-                                           TextAlignment="Left"
-                                           Padding="0 0 0 6" />
-                                <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
-                                    <TextBlock Text="Rank:" />
-                                    <TextBlock Text="{Binding Rank}" Margin="4 0 10 0" />
-                                    <TextBlock Text="Sort:" />
-                                    <TextBlock Text="{Binding SortId}" Margin="4 0 0 0" />
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0 0 0 6">
-                                    <TextBlock Text="{Binding CostLabel}" Margin="0 0 6 0" />
-                                    <TextBlock Text="{Binding BaseCostLabel}" />
-                                </StackPanel>
-                                <TextBlock Text="{Binding ExtraCostLabel}"
-                                           TextAlignment="Left"
-                                           Margin="0 0 0 6" />
-                                <Button Content="Import Joker"
-                                        Command="{Binding ExchangeCommand}"
-                                        HorizontalAlignment="Stretch"
-                                        Padding="6 2"
-                                        Margin="0 0 0 4" />
-                                <Button Content="Export Joker"
-                                        Command="{Binding ExportCommand}"
-                                        HorizontalAlignment="Stretch"
-                                        Padding="6 2" />
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-    </ScrollViewer>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Border>
 </Window>

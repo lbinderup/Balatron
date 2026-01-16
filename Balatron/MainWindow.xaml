@@ -4,21 +4,72 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:Balatron.Views"
         xmlns:local="clr-namespace:Balatron"
-        Title="Balatron Savegame Editor" Height="350" Width="525"
+        Title="Balatron Savegame Editor"
+        Height="520"
+        Width="640"
         SizeToContent="Height"
-        >
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="CanResize">
     <Window.Icon>
         <BitmapImage UriSource="pack://application:,,,/Balatron;component/Resources/app_icon.ico"/>
     </Window.Icon>
-    <Grid Margin="10">
-        <StackPanel>
-            <Button Name="LoadButton" Content="Load Save File" Click="LoadButton_Click" Margin="0,0,0,10"/>
-            <Button Name="SaveButton" Content="Save" Click="SaveButton_Click" IsEnabled="False" Margin="0,0,0,10"/>
-            <StackPanel Name="DirectModificationsPanel" Margin="0,10,0,0"/>
-            <Button Name="OpenJokerListButton" Content="View Jokers" Click="OpenJokerListButton_Click" IsEnabled="False" Margin="0,10,0,10"/>
-            <Button Name="OpenShopJokerListButton" Content="View Shop Jokers" Click="OpenShopJokerListButton_Click" IsEnabled="False" Margin="0,0,0,10"/>
-            <TextBox Name="TextEditor" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Height="200"/>
-            <Button Name="DataViewerButton" Content="Lua Node Tree Editor" Click="LuaNodeTreeViewerButton_Click" IsEnabled="False" Margin="0,10,0,10"/>
-        </StackPanel>
-    </Grid>
+    <Border Margin="12"
+            Background="{StaticResource BalatroDark}"
+            BorderBrush="{StaticResource BalatroShadow}"
+            BorderThickness="3"
+            CornerRadius="18">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid Background="{StaticResource BalatroPanel}"
+                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Balatron Savegame Editor"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource BalatroWhite}"
+                           FontSize="18"
+                           Margin="16,0,0,0" />
+                <Button Grid.Column="1"
+                        Content="—"
+                        Width="36"
+                        Height="28"
+                        Margin="0,8,8,8"
+                        Background="{StaticResource BalatroBlue}"
+                        Click="MinimizeButton_Click" />
+                <Button Grid.Column="2"
+                        Content="X"
+                        Width="36"
+                        Height="28"
+                        Margin="0,8,12,8"
+                        Background="{StaticResource BalatroRed}"
+                        Click="CloseButton_Click" />
+            </Grid>
+            <Grid Grid.Row="1" Margin="16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Button Name="LoadButton" Content="Load Save File" Click="LoadButton_Click" Margin="0,0,0,10"/>
+                <Button Name="SaveButton" Content="Save" Click="SaveButton_Click" IsEnabled="False" Margin="0,0,0,10" Grid.Row="1" Background="{StaticResource BalatroGreen}"/>
+                <StackPanel Name="DirectModificationsPanel" Margin="0,10,0,0" Grid.Row="2"/>
+                <Button Name="OpenJokerListButton" Content="View Jokers" Click="OpenJokerListButton_Click" IsEnabled="False" Margin="0,10,0,10" Grid.Row="3"/>
+                <Button Name="OpenShopJokerListButton" Content="View Shop Jokers" Click="OpenShopJokerListButton_Click" IsEnabled="False" Margin="0,0,0,10" Grid.Row="4" Background="{StaticResource BalatroBlue}"/>
+                <TextBox Name="TextEditor" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Height="200" Grid.Row="5"/>
+                <Button Name="DataViewerButton" Content="Lua Node Tree Editor" Click="LuaNodeTreeViewerButton_Click" IsEnabled="False" Margin="0,10,0,10" Grid.Row="6" Background="{StaticResource BalatroGreen}"/>
+            </Grid>
+        </Grid>
+    </Border>
 </Window>

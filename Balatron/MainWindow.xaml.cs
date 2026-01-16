@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Windows;
+using System.Windows.Input;
 using Balatron.Services;
 using Microsoft.Win32;
 
@@ -111,6 +112,24 @@ namespace Balatron
             var backupFileName = $"save_backup_{timestamp}.jkr";
             var backupPath = Path.Combine(directory, backupFileName);
             File.Copy(filePath, backupPath);
+        }
+
+        private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount > 1)
+                return;
+
+            DragMove();
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState.Minimized;
         }
 
         private static void DeflateFile(string inputPath, string outputTextFile)

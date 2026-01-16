@@ -5,13 +5,76 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <FontFamily x:Key="AppFont">pack://application:,,,/Resources/#m6x11plus</FontFamily>
+        <SolidColorBrush x:Key="BalatroBlue" Color="#2D6BFF" />
+        <SolidColorBrush x:Key="BalatroRed" Color="#E84C3D" />
+        <SolidColorBrush x:Key="BalatroGreen" Color="#32C24D" />
+        <SolidColorBrush x:Key="BalatroWhite" Color="#F5F6FA" />
+        <SolidColorBrush x:Key="BalatroDark" Color="#1B1A22" />
+        <SolidColorBrush x:Key="BalatroPanel" Color="#2C2A36" />
+        <SolidColorBrush x:Key="BalatroShadow" Color="#14131A" />
         <Style TargetType="{x:Type Control}">
             <Setter Property="FontFamily" Value="{StaticResource AppFont}" />
-            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontSize" Value="18" />
         </Style>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="FontFamily" Value="{StaticResource AppFont}" />
-            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontSize" Value="24" />
+        </Style>
+        <Style TargetType="{x:Type Button}">
+            <Setter Property="Foreground" Value="{StaticResource BalatroWhite}" />
+            <Setter Property="Background" Value="{StaticResource BalatroBlue}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BalatroShadow}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Grid>
+                            <Border x:Name="Base"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="6" />
+                            <Border x:Name="Highlight"
+                                    Margin="2"
+                                    BorderBrush="{StaticResource BalatroWhite}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Opacity="0.35" />
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Base" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect BlurRadius="8" ShadowDepth="0" Color="#55000000" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Base" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <TranslateTransform Y="1" />
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="Highlight" Property="Opacity" Value="0.15" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="{x:Type TextBox}">
+            <Setter Property="Foreground" Value="{StaticResource BalatroWhite}" />
+            <Setter Property="Background" Value="{StaticResource BalatroPanel}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BalatroShadow}" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="Padding" Value="10" />
         </Style>
     </Application.Resources>
 </Application>
