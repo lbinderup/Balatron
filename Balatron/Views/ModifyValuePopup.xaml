@@ -26,7 +26,6 @@
             
             <TextBlock Grid.Row="0"
                        Text="Modify Value"
-                       FontWeight="Bold"
                        TextAlignment="Center"
                        Margin="0,0,0,5"
                        />

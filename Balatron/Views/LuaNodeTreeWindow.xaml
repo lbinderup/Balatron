@@ -20,7 +20,7 @@
                 <TreeView.Resources>
                     <HierarchicalDataTemplate DataType="{x:Type local:LuaNode}" ItemsSource="{Binding Children}">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Key}" FontWeight="Bold" />
+                            <TextBlock Text="{Binding Key}" />
                             <TextBlock Text=": " />
                             <TextBlock Text="{Binding Value}" />
                         </StackPanel>

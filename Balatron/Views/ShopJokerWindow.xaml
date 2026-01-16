@@ -51,7 +51,6 @@
                             </Border>
                             <StackPanel Grid.Column="1" MinWidth="200">
                                 <TextBlock Text="{Binding SlotLabel}"
-                                           FontWeight="Bold"
                                            TextAlignment="Left"
                                            Padding="0 0 0 4" />
                                 <TextBlock Text="{Binding Label}"

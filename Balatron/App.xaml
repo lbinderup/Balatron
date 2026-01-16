@@ -4,5 +4,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <FontFamily x:Key="AppFont">pack://application:,,,/Resources/#m6x11plus</FontFamily>
+        <Style TargetType="{x:Type Control}">
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}" />
+            <Setter Property="FontSize" Value="16" />
+        </Style>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}" />
+            <Setter Property="FontSize" Value="16" />
+        </Style>
     </Application.Resources>
 </Application>
