@@ -6,7 +6,9 @@
              xmlns:views="clr-namespace:Balatron.Views"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <FontFamily x:Key="AppFont">pack://application:,,,/Resources/#m6x11plus</FontFamily>
+        <!-- Assembly-qualified so the font resolves even when Balatron isn't
+             the entry assembly (e.g. hosted by a test/screenshot harness). -->
+        <FontFamily x:Key="AppFont">pack://application:,,,/Balatron;component/Resources/#m6x11plus</FontFamily>
         <SolidColorBrush x:Key="BalatroBlue" Color="#2D6BFF" />
         <SolidColorBrush x:Key="BalatroRed" Color="#E84C3D" />
         <SolidColorBrush x:Key="BalatroGreen" Color="#32C24D" />

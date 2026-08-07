@@ -337,8 +337,9 @@ namespace Balatron.Views
             var baseCostNode = cardNode.Children.FirstOrDefault(n => n.Key == "base_cost");
             var extraCostNode = cardNode.Children.FirstOrDefault(n => n.Key == "extra_cost");
 
-            joker.Label = labelNode?.Value ?? "Unknown";
-            joker.Effect = effectNode?.Value ?? string.Empty;
+            // Values arrive straight from the Lua source, so strings are quoted.
+            joker.Label = labelNode?.Value?.Trim('"') ?? "Unknown";
+            joker.Effect = effectNode?.Value?.Trim('"') ?? string.Empty;
             joker.SortId = sortIdNode != null && int.TryParse(sortIdNode.Value, out int sid) ? sid : 0;
             joker.Rank = rankNode != null && int.TryParse(rankNode.Value, out int r) ? r : 0;
             joker.CenterKey = centerNode?.Value?.Trim('"') ?? string.Empty;
