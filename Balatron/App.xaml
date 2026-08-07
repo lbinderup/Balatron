@@ -285,7 +285,7 @@
                             </Style.Triggers>
                         </Style>
                     </StackPanel.Style>
-                    <TextBlock Text="Used now"
+                    <TextBlock Text="{Binding OutcomeLabel}"
                                FontSize="14"
                                Foreground="#FFD966" />
                     <TextBlock Text="{Binding OutcomeText}"

@@ -22,6 +22,7 @@ namespace Balatron.Views
         public string Title { get; init; }
         public string ChoiceLabel { get; init; }
         public System.Windows.Media.ImageSource Sprite { get; init; }
+        public object Tooltip { get; init; }
         public ICommand PeekCommand { get; init; }
     }
 
@@ -148,11 +149,31 @@ namespace Balatron.Views
             foreach (var (offer, def) in offerDefs)
             {
                 var kind = def?.Kind;
+                var packTitle = offer.Label ?? def?.Name ?? offer.CenterKey;
+                var choiceLabel = def != null ? $"Choose {def.Choices} of {def.CardCount}" : string.Empty;
+
+                // Hovering shows just this pack's contents; the button opens the
+                // fuller view (shared sequence when a kind is offered twice).
+                object packTooltip = null;
+                if (def != null)
+                {
+                    packTooltip = new PeekTooltipViewModel
+                    {
+                        Title = packTitle,
+                        Subtitle = choiceLabel,
+                        OutcomeLabel = "Contains",
+                        OutcomeCards = engine.PredictPackContents(offer.CenterKey)
+                            .Select(PeekCardViewModel.FromPrediction)
+                            .ToList()
+                    };
+                }
+
                 Packs.Add(new PackOfferViewModel
                 {
-                    Title = offer.Label ?? def?.Name ?? offer.CenterKey,
-                    ChoiceLabel = def != null ? $"Choose {def.Choices} of {def.CardCount}" : string.Empty,
+                    Title = packTitle,
+                    ChoiceLabel = choiceLabel,
                     Sprite = Services.CardSpriteService.GetPackSprite(offer.CenterKey),
+                    Tooltip = packTooltip,
                     PeekCommand = new RelayCommand(_ => ShowPackPeek(kind, activate: true), _ => kind != null)
                 });
             }

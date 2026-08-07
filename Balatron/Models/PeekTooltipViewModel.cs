@@ -12,6 +12,8 @@ namespace Balatron.Models
         public string Title { get; init; }
         public string Subtitle { get; init; }
         public string Body { get; init; }
+        /// <summary>Heading above the outcome cards.</summary>
+        public string OutcomeLabel { get; init; } = "Used now";
         public string OutcomeText { get; init; }
         public IReadOnlyList<PeekCardViewModel> OutcomeCards { get; init; }
 

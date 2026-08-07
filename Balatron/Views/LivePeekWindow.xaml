@@ -232,7 +232,8 @@
                                         BorderThickness="2"
                                         CornerRadius="10"
                                         Padding="10,6"
-                                        Margin="4">
+                                        Margin="4"
+                                        views:HoverPopup.Content="{Binding Tooltip}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
