@@ -90,6 +90,10 @@ namespace Balatron.Services.Live
         public IReadOnlyList<OwnedJokerInfo> OwnedJokers { get; init; }
         public IReadOnlyList<OwnedConsumableInfo> OwnedConsumables { get; init; }
         public IReadOnlyList<HandCardInfo> HandCards { get; init; }
+
+        /// <summary>The draw pile in save order; the top of the deck is the last entry.</summary>
+        public IReadOnlyList<HandCardInfo> DeckCards { get; init; }
+        public int HandCardLimit { get; init; }
         public int ConsumableSlots { get; init; }
         public int OwnedConsumableCount { get; init; }
         public string LastTarotPlanet { get; init; }
@@ -180,25 +184,12 @@ namespace Balatron.Services.Live
             var consumableSlots = (int)Number(Child(Child(consumablesArea, "config"), "card_limit")?.Value, 2);
 
             // Effects that target "a random card in hand" pick by sort_id, so
-            // the hand has to be captured with its ids.
-            var handCards = new List<HandCardInfo>();
-            var handCardsNode = Child(Child(cardAreas, "hand"), "cards");
-            if (handCardsNode != null)
-            {
-                foreach (var card in OrderedChildren(handCardsNode))
-                {
-                    var cardKey = StringValue(Child(Child(card, "save_fields"), "card")?.Value);
-                    if (cardKey == null)
-                        continue;
-                    handCards.Add(new HandCardInfo
-                    {
-                        CardKey = cardKey,
-                        EnhancementKey = CenterKey(card),
-                        Seal = StringValue(Child(card, "seal")?.Value),
-                        SortId = (int)Number(Child(card, "sort_id")?.Value)
-                    });
-                }
-            }
+            // the hand has to be captured with its ids. The deck matters too:
+            // opening an Arcana/Spectral pack draws a hand off the top of it.
+            var handArea = Child(cardAreas, "hand");
+            var handCards = ParseCards(Child(handArea, "cards"));
+            var deckCards = ParseCards(Child(Child(cardAreas, "deck"), "cards"));
+            var handCardLimit = (int)Number(Child(Child(handArea, "config"), "card_limit")?.Value, 8);
 
             var shopCards = new List<ShopCardInfo>();
             var shopCardsNode = Child(Child(cardAreas, "shop_jokers"), "cards");
@@ -310,6 +301,8 @@ namespace Balatron.Services.Live
                 OwnedJokers = ownedJokers,
                 OwnedConsumables = ownedConsumables,
                 HandCards = handCards,
+                DeckCards = deckCards,
+                HandCardLimit = handCardLimit,
                 ConsumableSlots = consumableSlots,
                 OwnedConsumableCount = ownedConsumableCount,
                 LastTarotPlanet = StringValue(Child(game, "last_tarot_planet")?.Value),
@@ -341,6 +334,28 @@ namespace Balatron.Services.Live
                 if (!string.IsNullOrEmpty(key))
                     yield return key;
             }
+        }
+
+        private static List<HandCardInfo> ParseCards(LuaNode cardsNode)
+        {
+            var cards = new List<HandCardInfo>();
+            if (cardsNode == null)
+                return cards;
+
+            foreach (var card in OrderedChildren(cardsNode))
+            {
+                var cardKey = StringValue(Child(Child(card, "save_fields"), "card")?.Value);
+                if (cardKey == null)
+                    continue;
+                cards.Add(new HandCardInfo
+                {
+                    CardKey = cardKey,
+                    EnhancementKey = CenterKey(card),
+                    Seal = StringValue(Child(card, "seal")?.Value),
+                    SortId = (int)Number(Child(card, "sort_id")?.Value)
+                });
+            }
+            return cards;
         }
 
         private static IReadOnlySet<string> KeySet(LuaNode tableNode)

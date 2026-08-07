@@ -570,8 +570,27 @@ namespace Balatron.Services.Prediction
         private List<OwnedJokerInfo> EditionlessJokers() =>
             JokersBySortId(_snap.OwnedJokers.Where(j => !j.HasEdition));
 
-        private List<HandCardInfo> HandBySortId() =>
-            _snap.HandCards.OrderBy(c => c.SortId).ToList();
+        /// <summary>
+        /// The hand these effects would act on. Outside a round there is no
+        /// hand, but opening an Arcana/Spectral pack draws one off the top of
+        /// the deck — and that draw involves no RNG at all, it just takes the
+        /// last cards of the (already saved) deck order. So the hand is known
+        /// either way; <c>Projected</c> flags the pack-draw case.
+        /// </summary>
+        private (List<HandCardInfo> Cards, bool Projected) EffectiveHand()
+        {
+            if (_snap.HandCards.Count > 0)
+                return (_snap.HandCards.OrderBy(c => c.SortId).ToList(), false);
+
+            var draw = Math.Min(_snap.DeckCards.Count, _snap.HandCardLimit);
+            if (draw <= 0)
+                return (new List<HandCardInfo>(), true);
+
+            return (_snap.DeckCards
+                .Skip(_snap.DeckCards.Count - draw)   // deck is drawn from the end
+                .OrderBy(c => c.SortId)
+                .ToList(), true);
+        }
 
         private static PredictedCard OwnedJokerCard(OwnedJokerInfo joker, string edition = null)
         {
@@ -628,7 +647,7 @@ namespace Balatron.Services.Prediction
             text = null;
             cards = null;
 
-            var hand = HandBySortId();
+            var (hand, projected) = EffectiveHand();
             if (hand.Count == 0)
             {
                 text = "Needs cards in hand";
@@ -681,7 +700,9 @@ namespace Balatron.Services.Prediction
             }
 
             cards = created;
-            text = $"Destroys {BalatroItems.CardDisplayName(destroyed.CardKey)}, creates:";
+            text = projected
+                ? $"With the hand a pack draws: destroys {BalatroItems.CardDisplayName(destroyed.CardKey)}, creates:"
+                : $"Destroys {BalatroItems.CardDisplayName(destroyed.CardKey)}, creates:";
             return true;
         }
 
@@ -690,7 +711,7 @@ namespace Balatron.Services.Prediction
             text = null;
             cards = null;
 
-            var hand = HandBySortId();
+            var (hand, projected) = EffectiveHand();
             if (hand.Count == 0)
             {
                 text = "Needs cards in hand";
@@ -707,7 +728,7 @@ namespace Balatron.Services.Prediction
             }
 
             cards = shuffled.Take(5).Select(HandCard).ToList();
-            text = "Destroys:";
+            text = projected ? "With the hand a pack draws, destroys:" : "Destroys:";
             return true;
         }
 
