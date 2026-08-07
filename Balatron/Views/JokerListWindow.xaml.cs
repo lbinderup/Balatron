@@ -7,6 +7,7 @@ using System.Windows.Input;
 using Microsoft.Win32;
 using Balatron.Models;
 using Balatron.Services;
+using Balatron.Services.Cards;
 
 namespace Balatron.Views
 {
@@ -29,6 +30,42 @@ namespace Balatron.Views
                 EditSellCost,
                 SetEdition);
             DataContext = this;
+        }
+
+        private void AddCardButton_Click(object sender, RoutedEventArgs e)
+        {
+            var picker = new AddCardWindow(new[] { "Joker", "Tarot", "Planet", "Spectral" }) { Owner = this };
+            if (picker.ShowDialog() != true || picker.SelectedCenter == null)
+                return;
+
+            var center = picker.SelectedCenter;
+            var area = LuaNodeTreeWindow.AreaForOwnedCard(center);
+            if (area == null)
+                return;
+
+            if (!_editor.AddCardToArea(area, CardFactory.Create(center)))
+            {
+                MessageBox.Show($"Could not find the '{area}' card area in this save.",
+                    "Add Card", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (center.IsJoker)
+                RefreshJokers();
+            else
+                MessageBox.Show($"{center.Name} added to your consumables.",
+                    "Add Card", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void RefreshJokers()
+        {
+            var refreshed = _editor.GetJokerViewModels(
+                ImportJoker, ExportJoker, ToggleEternal, ToggleRental,
+                TogglePerishable, EditPerishTally, EditSellCost, SetEdition);
+
+            Jokers.Clear();
+            foreach (var joker in refreshed)
+                Jokers.Add(joker);
         }
 
         private static void ExportJoker(JokerViewModel joker)

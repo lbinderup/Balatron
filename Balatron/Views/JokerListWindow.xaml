@@ -36,10 +36,19 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Owned Jokers"
-                               VerticalAlignment="Center"
-                               FontSize="18"
-                               Margin="16,0,24,0" />
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Owned Jokers"
+                                   VerticalAlignment="Center"
+                                   FontSize="18"
+                                   Margin="16,0,16,0" />
+                        <Button Content="+ Add Card"
+                                FontSize="14"
+                                Padding="10,3"
+                                Margin="0,0,24,0"
+                                VerticalAlignment="Center"
+                                Background="{StaticResource BalatroGreen}"
+                                Click="AddCardButton_Click" />
+                    </StackPanel>
                     <Button Grid.Column="1"
                             Content="—" Padding="0"
                             Width="36"

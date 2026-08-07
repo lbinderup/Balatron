@@ -31,6 +31,8 @@
     <Resource Include="Resources\\tags_2x_art.png" />
     <Resource Include="Resources\\deck_art.png" />
     <Resource Include="Resources\\deck_2x_art.png" />
+    <!-- Joker/consumable/voucher definitions, extracted from the game -->
+    <Resource Include="Resources\\centers.json" />
     <Resource Include="Shaders\\foil.ps" />
     <Resource Include="Shaders\\holo.ps" />
     <Resource Include="Shaders\\polychrome.ps" />

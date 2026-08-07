@@ -5,6 +5,7 @@ using System.Windows.Input;
 using Microsoft.Win32;
 using Balatron.Models;
 using Balatron.Services;
+using Balatron.Services.Cards;
 
 namespace Balatron.Views
 {
@@ -20,6 +21,36 @@ namespace Balatron.Views
             ShopCards = _editor.GetShopCardViewModels(ImportCard, ExportCard);
             DataContext = this;
             EmptyText.Visibility = ShopCards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void AddCardButton_Click(object sender, RoutedEventArgs e)
+        {
+            var picker = new AddCardWindow(new[] { "Joker", "Tarot", "Planet", "Spectral", "Voucher" }) { Owner = this };
+            if (picker.ShowDialog() != true || picker.SelectedCenter == null)
+                return;
+
+            var center = picker.SelectedCenter;
+            var area = LuaNodeTreeWindow.AreaForShopCard(center);
+
+            if (!_editor.AddCardToArea(area, CardFactory.Create(center), replaceExisting: center.IsVoucher))
+            {
+                MessageBox.Show($"Could not find the '{area}' card area in this save.",
+                    "Add Card", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (center.IsVoucher)
+            {
+                MessageBox.Show($"{center.Name} is now the shop's voucher.",
+                    "Add Card", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var refreshed = _editor.GetShopCardViewModels(ImportCard, ExportCard);
+            ShopCards.Clear();
+            foreach (var card in refreshed)
+                ShopCards.Add(card);
+            EmptyText.Visibility = Visibility.Collapsed;
         }
 
         private void ExportCard(JokerViewModel card)

@@ -7,8 +7,10 @@ using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Globalization;
 using Balatron.Models;
 using Balatron.Services;
+using Balatron.Services.Cards;
 using Balatron.Services.Prediction;
 
 namespace Balatron.Views
@@ -194,6 +196,47 @@ namespace Balatron.Views
 
             return shopCards;
         }
+
+        /// <summary>
+        /// Appends a generated card to a card area ("jokers", "consumeables",
+        /// "shop_jokers", "shop_vouchers"). Cards are keyed by position, so the
+        /// new entry takes the next free index.
+        /// </summary>
+        public bool AddCardToArea(string areaKey, LuaNode card, bool replaceExisting = false)
+        {
+            var cardsNode = GetCardsNode(areaKey);
+            if (cardsNode == null || card == null)
+                return false;
+
+            // The shop's voucher slot holds a single card, so adding means
+            // swapping rather than stacking a second one in.
+            if (replaceExisting)
+                cardsNode.Children.Clear();
+
+            var nextIndex = cardsNode.Children
+                .Select(c => int.TryParse(c.Key, out var i) ? i : 0)
+                .DefaultIfEmpty(0)
+                .Max() + 1;
+
+            card.Key = nextIndex.ToString(CultureInfo.InvariantCulture);
+            card.ForceQuotedKey = false;   // positional keys are bare numbers
+            card.Parent = cardsNode;
+            cardsNode.Children.Add(card);
+
+            PersistChanges();
+            return true;
+        }
+
+        /// <summary>Which card area a generated center belongs in.</summary>
+        public static string AreaForOwnedCard(CenterDef center) => center.Set switch
+        {
+            "Joker" => "jokers",
+            "Tarot" or "Planet" or "Spectral" => "consumeables",
+            _ => null
+        };
+
+        public static string AreaForShopCard(CenterDef center) =>
+            center.IsVoucher ? "shop_vouchers" : "shop_jokers";
 
         public void ReplaceJoker(LuaNode originalJoker, LuaNode newJoker)
         {
