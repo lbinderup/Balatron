@@ -420,7 +420,7 @@ namespace Balatron.Services.Prediction
                         if (forced != null)
                         {
                             temp.Add(forced.Key);
-                            cards.Add(WithOutcome(Card(PredictedKind.Planet, forced, note: "Telescope")));
+                            cards.Add(WithOutcome(Card(PredictedKind.Planet, forced, note: "Telescope'd")));
                         }
                         else
                         {
