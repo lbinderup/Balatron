@@ -54,6 +54,8 @@ namespace Balatron.Views
         private GameStateSnapshot _snapshot;
         private IReadOnlySet<string> _profileUnlocks;
         private int _rerollDepth = 4;
+        private PackPeekWindow _packPeek;
+        private string _packPeekKind;
 
         public ObservableCollection<PeekCardViewModel> ShopNow { get; } = new();
         public ObservableCollection<PackOfferViewModel> Packs { get; } = new();
@@ -118,73 +120,21 @@ namespace Balatron.Views
 
             foreach (var (offer, def) in offerDefs)
             {
-                var title = offer.Label ?? def?.Name ?? offer.CenterKey;
-                var choiceLabel = def != null ? $"Choose {def.Choices} of {def.CardCount}" : string.Empty;
-                var centerKey = offer.CenterKey;
-                // Packs of the same kind pull from one shared RNG sequence, so
-                // peeking them must be presented together.
-                var sharedKind = def != null
-                    ? offerDefs.Where(x => x.Def != null && x.Def.Kind == def.Kind).ToList()
-                    : null;
-
+                var kind = def?.Kind;
                 Packs.Add(new PackOfferViewModel
                 {
-                    Title = title,
-                    ChoiceLabel = choiceLabel,
+                    Title = offer.Label ?? def?.Name ?? offer.CenterKey,
+                    ChoiceLabel = def != null ? $"Choose {def.Choices} of {def.CardCount}" : string.Empty,
                     Sprite = Services.CardSpriteService.GetPackSprite(offer.CenterKey),
-                    PeekCommand = new RelayCommand(_ =>
-                    {
-                        var peekEngine = new PredictionEngine(_snapshot, _profileUnlocks);
-                        PackPeekWindow window;
-
-                        if (sharedKind is { Count: > 1 })
-                        {
-                            var defs = sharedKind.Select(x => x.Def).ToList();
-                            var sequence = peekEngine.PredictPackSequence(defs)
-                                .SelectMany(segment => segment)
-                                .Select(PeekCardViewModel.FromPrediction)
-                                .ToList();
-
-                            var headers = sharedKind.Select((x, index) =>
-                            {
-                                // The sequence depends on opening order: the
-                                // trailing pack resamples cards the leading one
-                                // already contains.
-                                var orderedDefs = new List<PackDef> { x.Def };
-                                orderedDefs.AddRange(sharedKind.Where((_, j) => j != index).Select(y => y.Def));
-                                var whenFirst = peekEngine.PredictPackSequence(orderedDefs)
-                                    .SelectMany(segment => segment)
-                                    .Select(PeekCardViewModel.FromPrediction)
-                                    .ToList();
-
-                                return new PackHeaderViewModel
-                                {
-                                    Name = x.Offer.Label ?? x.Def.Name,
-                                    Sprite = Services.CardSpriteService.GetPackSprite(x.Offer.CenterKey),
-                                    CardCount = x.Def.CardCount,
-                                    Label = $"Choose {x.Def.Choices} of {x.Def.CardCount}",
-                                    SequenceWhenOpenedFirst = whenFirst
-                                };
-                            }).ToList();
-
-                            window = new PackPeekWindow($"{def.Kind} Packs", headers, sequence);
-                        }
-                        else
-                        {
-                            var contents = peekEngine
-                                .PredictPackContents(centerKey)
-                                .Select(PeekCardViewModel.FromPrediction)
-                                .ToList();
-                            window = new PackPeekWindow($"{title} · {choiceLabel}", contents);
-                        }
-
-                        window.Owner = this;
-                        window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                        window.Show();
-                    })
+                    PeekCommand = new RelayCommand(_ => ShowPackPeek(kind, activate: true), _ => kind != null)
                 });
             }
             PacksEmptyText.Visibility = Packs.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+            // An open peek belongs to the previous save state: re-target it at
+            // the new one, or close it if that pack is no longer obtainable.
+            if (_packPeek != null && _packPeekKind != null)
+                ShowPackPeek(_packPeekKind, activate: false);
 
             var nextPacks = engine.PredictNextShopPacks();
             NextPacksText.Text = nextPacks.Count > 0
@@ -200,6 +150,99 @@ namespace Balatron.Views
                     Cards = reroll.Slots.Select(PeekCardViewModel.FromPrediction).ToList()
                 });
             }
+        }
+
+        /// <summary>
+        /// Shows every currently offered pack of <paramref name="kind"/> in the
+        /// single shared popup — one pack plainly, several as their shared card
+        /// sequence. Closes the popup when the kind is no longer on offer.
+        /// </summary>
+        private void ShowPackPeek(string kind, bool activate)
+        {
+            if (kind == null || _snapshot == null)
+                return;
+
+            var offers = _snapshot.PackOffers
+                .Select(o => (Offer: o, Def: BalatroItems.PackFromCenterKey(o.CenterKey)))
+                .Where(x => x.Def != null && x.Def.Kind == kind)
+                .ToList();
+
+            if (offers.Count == 0)
+            {
+                _packPeek?.Close();
+                return;
+            }
+
+            var engine = new PredictionEngine(_snapshot, _profileUnlocks);
+            var window = GetPackPeekWindow();
+            _packPeekKind = kind;
+
+            if (offers.Count == 1)
+            {
+                var (offer, def) = offers[0];
+                var contents = engine.PredictPackContents(offer.CenterKey)
+                    .Select(PeekCardViewModel.FromPrediction)
+                    .ToList();
+                window.ShowPack($"{offer.Label ?? def.Name} · Choose {def.Choices} of {def.CardCount}", contents);
+            }
+            else
+            {
+                // Packs of one kind pull from a single shared RNG sequence, so
+                // they have to be presented together.
+                var sequence = engine.PredictPackSequence(offers.Select(x => x.Def).ToList())
+                    .SelectMany(segment => segment)
+                    .Select(PeekCardViewModel.FromPrediction)
+                    .ToList();
+
+                var headers = offers.Select((x, index) =>
+                {
+                    // The sequence depends on opening order: the trailing pack
+                    // resamples cards the leading one already contains.
+                    var orderedDefs = new List<PackDef> { x.Def };
+                    orderedDefs.AddRange(offers.Where((_, j) => j != index).Select(y => y.Def));
+                    var whenFirst = engine.PredictPackSequence(orderedDefs)
+                        .SelectMany(segment => segment)
+                        .Select(PeekCardViewModel.FromPrediction)
+                        .ToList();
+
+                    return new PackHeaderViewModel
+                    {
+                        Name = x.Offer.Label ?? x.Def.Name,
+                        Sprite = Services.CardSpriteService.GetPackSprite(x.Offer.CenterKey),
+                        CardCount = x.Def.CardCount,
+                        Label = $"Choose {x.Def.Choices} of {x.Def.CardCount}",
+                        SequenceWhenOpenedFirst = whenFirst
+                    };
+                }).ToList();
+
+                window.ShowSequence($"{kind} Packs", headers, sequence);
+            }
+
+            window.Show();
+            if (activate)
+                window.Activate();
+        }
+
+        /// <summary>
+        /// One shared pack popup: peeking again retargets it (keeping wherever
+        /// the user dragged it) instead of stacking duplicates.
+        /// </summary>
+        private PackPeekWindow GetPackPeekWindow()
+        {
+            if (_packPeek == null)
+            {
+                _packPeek = new PackPeekWindow
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                _packPeek.Closed += (_, _) =>
+                {
+                    _packPeek = null;
+                    _packPeekKind = null;
+                };
+            }
+            return _packPeek;
         }
 
         private void RebuildVoucherLines(PredictionEngine engine)

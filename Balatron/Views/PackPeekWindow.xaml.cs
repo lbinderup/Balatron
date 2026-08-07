@@ -47,12 +47,18 @@ namespace Balatron.Views
         private readonly System.Collections.ObjectModel.ObservableCollection<SequenceCardViewModel> _cards = new();
         private IReadOnlyList<PeekCardViewModel> _defaultSequence;
 
-        /// <summary>Single pack: plain contents view.</summary>
-        public PackPeekWindow(string title, IReadOnlyList<PeekCardViewModel> cards)
+        public PackPeekWindow()
         {
             InitializeComponent();
-            TitleText.Text = title;
             CardsList.ItemsSource = _cards;
+        }
+
+        /// <summary>Single pack: plain contents view.</summary>
+        public void ShowPack(string title, IReadOnlyList<PeekCardViewModel> cards)
+        {
+            TitleText.Text = title;
+            PacksHeaderList.ItemsSource = null;
+            PacksHeaderList.Visibility = Visibility.Collapsed;
             _defaultSequence = cards;
             SetCards(cards, null);
         }
@@ -63,14 +69,12 @@ namespace Balatron.Views
         /// shows the sequence for opening that pack first and highlights its
         /// share of the cards.
         /// </summary>
-        public PackPeekWindow(string title, IReadOnlyList<PackHeaderViewModel> packs,
+        public void ShowSequence(string title, IReadOnlyList<PackHeaderViewModel> packs,
             IReadOnlyList<PeekCardViewModel> sequence)
         {
-            InitializeComponent();
             TitleText.Text = title;
             PacksHeaderList.ItemsSource = packs;
             PacksHeaderList.Visibility = Visibility.Visible;
-            CardsList.ItemsSource = _cards;
             _defaultSequence = sequence;
             SetCards(sequence, null);
         }
