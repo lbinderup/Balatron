@@ -14,6 +14,16 @@ namespace Balatron.Models
         public string Body { get; init; }
         public string OutcomeText { get; init; }
         public IReadOnlyList<PeekCardViewModel> OutcomeCards { get; init; }
-        public bool HasOutcome => !string.IsNullOrEmpty(OutcomeText) || OutcomeCards is { Count: > 0 };
+
+        /// <summary>Cards the effect destroys — rendered crossed out, ahead of an "=".</summary>
+        public IReadOnlyList<PeekCardViewModel> DestroyedCards { get; init; }
+
+        public bool HasDestroyed => DestroyedCards is { Count: > 0 };
+        public bool HasCreated => OutcomeCards is { Count: > 0 };
+
+        /// <summary>Only show the "=" when destruction actually yields something.</summary>
+        public bool ShowsEquals => HasDestroyed && HasCreated;
+
+        public bool HasOutcome => !string.IsNullOrEmpty(OutcomeText) || HasCreated || HasDestroyed;
     }
 }

@@ -14,15 +14,24 @@ namespace Balatron.Models
     public sealed class PeekCardViewModel
     {
         public string Name { get; private init; }
+        /// <summary>Small label above the art in the compact card (e.g. "Next shop").</summary>
+        public string Caption { get; private init; }
         public string TypeLabel { get; private init; }
         public string Edition { get; private init; }
         public string Badges { get; private init; }
         public string SubText { get; private init; }
         public object Tooltip { get; private init; }
+        /// <summary>2x art, for the full-size card (142x190 box).</summary>
         public IReadOnlyList<ImageSource> SpriteLayers { get; private init; }
         public bool HasSprite => SpriteLayers is { Count: > 0 };
+
+        /// <summary>1x art, for the compact card (71x95 box).</summary>
+        public IReadOnlyList<ImageSource> MiniSpriteLayers { get; private init; }
+        public bool HasMiniSprite => MiniSpriteLayers is { Count: > 0 };
         /// <summary>True when this card has a predictable random outcome worth hovering for.</summary>
         public bool HasOutcome { get; private init; }
+        /// <summary>Drawn crossed out — this card gets destroyed by the effect.</summary>
+        public bool IsDestroyed { get; private set; }
         public string FaceText { get; private init; }
         public string OverlayText { get; private init; }
         public Brush OverlayForeground { get; private init; }
@@ -75,6 +84,7 @@ namespace Balatron.Models
         private static readonly Brush PlanetBrush = Freeze("#12A0CE");
         private static readonly Brush SpectralBrush = Freeze("#4584FA");
         private static readonly Brush VoucherBrush = Freeze("#E8A33D");
+        private static readonly Brush TagBrush = Freeze("#5BC0BE");
         private static readonly Brush CardFaceBrush = Freeze("#F5F6FA");
         private static readonly Brush DarkText = Freeze("#1B1A22");
         private static readonly Brush RedSuit = Freeze("#C6273A");
@@ -101,15 +111,24 @@ namespace Balatron.Models
             {
                 PredictedKind.Joker => Joker(card, string.Join(" · ", badges)),
                 PredictedKind.PlayingCard => PlayingCard(card, badges),
+                PredictedKind.Voucher => FromVoucher(card.CenterKey, null),
                 _ => Consumable(card, badges)
             };
+        }
+
+        private static PeekCardViewModel Destroyed(PredictedCard card)
+        {
+            var vm = FromPrediction(card);
+            vm.IsDestroyed = true;
+            return vm;
         }
 
         private static string NormalizeEdition(string edition) =>
             string.IsNullOrEmpty(edition) || edition == "None" ? null : edition;
 
         public static PeekCardViewModel FromShopCard(ShopCardInfo info,
-            string outcomeText = null, IReadOnlyList<PredictedCard> outcomeCards = null)
+            string outcomeText = null, IReadOnlyList<PredictedCard> outcomeCards = null,
+            IReadOnlyList<PredictedCard> destroyedCards = null)
         {
             if (info.CenterKey != null && info.CenterKey.StartsWith("j_"))
             {
@@ -142,7 +161,8 @@ namespace Balatron.Models
                     Text = consumable.Text,
                     Edition = NormalizeEdition(info.Edition),
                     OutcomeText = outcomeText,
-                    OutcomeCards = outcomeCards
+                    OutcomeCards = outcomeCards,
+                    DestroyedCards = destroyedCards
                 };
                 return Consumable(card, BuildBadges(card), $"${info.Cost}");
             }
@@ -161,9 +181,74 @@ namespace Balatron.Models
             };
         }
 
+        /// <summary>A tag attached to one of this ante's blinds.</summary>
+        public static PeekCardViewModel FromTag(string tagKey, string caption,
+            string outcomeText, IReadOnlyList<PredictedCard> outcomeCards)
+        {
+            BalatroItems.TagsByKey.TryGetValue(tagKey ?? string.Empty, out var def);
+            var name = def?.Name ?? tagKey ?? "Tag";
+            var sprite = CardSpriteService.GetTagSprite(tagKey, 1);
+            var tooltip = new PeekTooltipViewModel
+            {
+                Title = name,
+                Subtitle = "Tag",
+                Body = def?.Text,
+                OutcomeText = outcomeText,
+                OutcomeCards = outcomeCards?.Select(FromPrediction).ToList()
+            };
+
+            return new PeekCardViewModel
+            {
+                Name = name,
+                Caption = caption,
+                TypeLabel = "Tag",
+                Badges = string.Empty,
+                SubText = string.Empty,
+                Tooltip = tooltip,
+                HasOutcome = tooltip.HasOutcome,
+                MiniSpriteLayers = sprite != null ? new[] { sprite } : null,
+                SpriteLayers = sprite != null ? new[] { sprite } : null,
+                FaceText = "◆",
+                Accent = TagBrush,
+                FaceBackground = TagBrush,
+                FaceForeground = WhiteText
+            };
+        }
+
+        /// <summary>A voucher on offer now or predicted for a later shop.</summary>
+        public static PeekCardViewModel FromVoucher(string centerKey, string caption)
+        {
+            BalatroItems.VouchersByKey.TryGetValue(centerKey ?? string.Empty, out var def);
+            var name = def?.Name ?? centerKey ?? "Voucher";
+            var sprite = CardSpriteService.GetVoucherSprite(centerKey, 2);
+            var miniSprite = CardSpriteService.GetVoucherSprite(centerKey, 1);
+
+            return new PeekCardViewModel
+            {
+                Name = name,
+                Caption = caption,
+                TypeLabel = "Voucher",
+                Badges = string.Empty,
+                SubText = string.Empty,
+                Tooltip = new PeekTooltipViewModel
+                {
+                    Title = name,
+                    Subtitle = "Voucher",
+                    Body = def?.Text
+                },
+                SpriteLayers = sprite != null ? new[] { sprite } : null,
+                MiniSpriteLayers = miniSprite != null ? new[] { miniSprite } : null,
+                FaceText = "V",
+                Accent = VoucherBrush,
+                FaceBackground = VoucherBrush,
+                FaceForeground = WhiteText
+            };
+        }
+
         /// <summary>A joker you already own, with what its random effect would do next.</summary>
         public static PeekCardViewModel FromOwnedJoker(OwnedJokerInfo info,
-            string outcomeText, IReadOnlyList<PredictedCard> outcomeCards)
+            string outcomeText, IReadOnlyList<PredictedCard> outcomeCards,
+            IReadOnlyList<PredictedCard> destroyedCards = null)
         {
             BalatroItems.JokersByKey.TryGetValue(info.CenterKey ?? string.Empty, out var def);
             var card = new PredictedCard
@@ -176,14 +261,16 @@ namespace Balatron.Models
                 Edition = NormalizeEdition(info.Edition),
                 Eternal = info.Eternal,
                 OutcomeText = outcomeText,
-                OutcomeCards = outcomeCards
+                OutcomeCards = outcomeCards,
+                DestroyedCards = destroyedCards
             };
             return Joker(card, string.Join(" · ", BuildBadges(card)));
         }
 
         /// <summary>A consumable you already own, with what using it now would do.</summary>
         public static PeekCardViewModel FromOwnedConsumable(OwnedConsumableInfo info,
-            string outcomeText, IReadOnlyList<PredictedCard> outcomeCards)
+            string outcomeText, IReadOnlyList<PredictedCard> outcomeCards,
+            IReadOnlyList<PredictedCard> destroyedCards = null)
         {
             BalatroItems.ConsumablesByKey.TryGetValue(info.CenterKey ?? string.Empty, out var def);
             var kind = BalatroItems.Tarots.Any(t => t.Key == info.CenterKey) ? PredictedKind.Tarot
@@ -196,7 +283,8 @@ namespace Balatron.Models
                 Name = def?.Name ?? info.Label ?? info.CenterKey,
                 Text = def?.Text,
                 OutcomeText = outcomeText,
-                OutcomeCards = outcomeCards
+                OutcomeCards = outcomeCards,
+                DestroyedCards = destroyedCards
             };
             return Consumable(card, BuildBadges(card));
         }
@@ -212,8 +300,10 @@ namespace Balatron.Models
             };
             var rarityName = card.Rarity switch { 2 => "Uncommon", 3 => "Rare", 4 => "Legendary", _ => "Common" };
 
-            var layers = new List<ImageSource>(JokerSpriteService.GetSpriteLayers(card.CenterKey));
-            layers.AddRange(CardSpriteService.GetStickerSprites(card.Eternal, card.Perishable, card.Rental));
+            var layers = new List<ImageSource>(JokerSpriteService.GetSpriteLayers(card.CenterKey, 2));
+            layers.AddRange(CardSpriteService.GetStickerSprites(card.Eternal, card.Perishable, card.Rental, 2));
+            var miniLayers = new List<ImageSource>(JokerSpriteService.GetSpriteLayers(card.CenterKey, 1));
+            miniLayers.AddRange(CardSpriteService.GetStickerSprites(card.Eternal, card.Perishable, card.Rental, 1));
 
             var tooltip = new PeekTooltipViewModel
             {
@@ -221,7 +311,8 @@ namespace Balatron.Models
                 Subtitle = string.IsNullOrEmpty(badges) ? $"{rarityName} Joker" : $"{rarityName} Joker · {badges}",
                 Body = card.Text,
                 OutcomeText = card.OutcomeText,
-                OutcomeCards = card.OutcomeCards?.Select(FromPrediction).ToList()
+                OutcomeCards = card.OutcomeCards?.Select(FromPrediction).ToList(),
+                DestroyedCards = card.DestroyedCards?.Select(Destroyed).ToList()
             };
 
             return new PeekCardViewModel
@@ -234,6 +325,7 @@ namespace Balatron.Models
                 Tooltip = tooltip,
                 HasOutcome = tooltip.HasOutcome,
                 SpriteLayers = layers,
+                MiniSpriteLayers = miniLayers,
                 FaceText = card.Name.Length > 0 ? card.Name.Substring(0, 1) : "J",
                 Accent = accent,
                 FaceBackground = PanelBrush,
@@ -250,7 +342,8 @@ namespace Balatron.Models
                 _ => (SpectralBrush, "Spectral", "◈")
             };
 
-            var sprite = CardSpriteService.GetConsumableSprite(card.CenterKey);
+            var sprite = CardSpriteService.GetConsumableSprite(card.CenterKey, 2);
+            var miniSprite = CardSpriteService.GetConsumableSprite(card.CenterKey, 1);
 
             var tooltip = new PeekTooltipViewModel
             {
@@ -258,7 +351,8 @@ namespace Balatron.Models
                 Subtitle = typeName,
                 Body = card.Text,
                 OutcomeText = card.OutcomeText,
-                OutcomeCards = card.OutcomeCards?.Select(FromPrediction).ToList()
+                OutcomeCards = card.OutcomeCards?.Select(FromPrediction).ToList(),
+                DestroyedCards = card.DestroyedCards?.Select(Destroyed).ToList()
             };
 
             return new PeekCardViewModel
@@ -271,6 +365,7 @@ namespace Balatron.Models
                 Tooltip = tooltip,
                 HasOutcome = tooltip.HasOutcome,
                 SpriteLayers = sprite != null ? new[] { sprite } : null,
+                MiniSpriteLayers = miniSprite != null ? new[] { miniSprite } : null,
                 FaceText = glyph,
                 Accent = accent,
                 FaceBackground = accent,
@@ -290,13 +385,26 @@ namespace Balatron.Models
             if (card.Enhancement != null && BalatroItems.EnhancementsByName.TryGetValue(card.Enhancement, out var enhDef))
                 enhancementKey = enhDef.Key;
 
-            var layers = new List<ImageSource>();
-            var baseLayer = CardSpriteService.GetPlayingCardBase(enhancementKey);
-            if (baseLayer != null)
-                layers.Add(baseLayer);
-            var sealLayer = CardSpriteService.GetSealSprite(card.Seal);
-            if (sealLayer != null)
-                layers.Add(sealLayer);
+            // Enhancement/base art, then the seal stamp, then the rank+suit
+            // pips on top. Stone cards show no face.
+            var isStone = enhancementKey == "m_stone";
+            List<ImageSource> BuildLayers(int scale)
+            {
+                var built = new List<ImageSource>();
+                var baseLayer = CardSpriteService.GetPlayingCardBase(enhancementKey, scale);
+                if (baseLayer != null) built.Add(baseLayer);
+                var sealLayer = CardSpriteService.GetSealSprite(card.Seal, scale);
+                if (sealLayer != null) built.Add(sealLayer);
+                if (!isStone)
+                {
+                    var faceLayer = CardSpriteService.GetPlayingCardFace(card.CenterKey, scale);
+                    if (faceLayer != null) built.Add(faceLayer);
+                }
+                return built;
+            }
+
+            var layers = BuildLayers(2);
+            var miniLayers = BuildLayers(1);
 
             var bodyParts = new List<string>();
             if (card.Enhancement != null && BalatroItems.EnhancementsByName.TryGetValue(card.Enhancement, out var e))
@@ -311,8 +419,9 @@ namespace Balatron.Models
                 Body = bodyParts.Count > 0 ? string.Join("\n", bodyParts) : null
             };
 
-            // Stone cards have no rank or suit.
-            var overlay = enhancementKey == "m_stone" ? string.Empty : $"{rank}{glyph}";
+            // The face sprite carries the pips, so the text overlay is only a
+            // fallback for when the deck sheet is unavailable.
+            var overlay = isStone || layers.Count > 1 ? string.Empty : $"{rank}{glyph}";
 
             return new PeekCardViewModel
             {
@@ -323,6 +432,7 @@ namespace Balatron.Models
                 SubText = string.Empty,
                 Tooltip = tooltip,
                 SpriteLayers = layers.Count > 0 ? layers : null,
+                MiniSpriteLayers = miniLayers.Count > 0 ? miniLayers : null,
                 FaceText = $"{rank}{glyph}",
                 OverlayText = overlay,
                 OverlayForeground = isRed ? RedSuit : DarkText,

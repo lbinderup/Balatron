@@ -507,6 +507,43 @@ namespace Balatron.Services.Prediction
             new PackDef("p_spectral_mega", "Mega Spectral Pack", "Spectral", 4, 2, 0.07),
         };
 
+        public sealed class TagDef
+        {
+            public string Key { get; init; }
+            public string Name { get; init; }
+            public string Text { get; init; }
+            /// <summary>Pack this tag hands you for free, if any.</summary>
+            public string GrantsPackKey { get; init; }
+        }
+
+        public static readonly IReadOnlyDictionary<string, TagDef> TagsByKey = new[]
+        {
+            new TagDef { Key = "tag_uncommon", Name = "Uncommon Tag", Text = "Shop has a free Uncommon Joker" },
+            new TagDef { Key = "tag_rare", Name = "Rare Tag", Text = "Shop has a free Rare Joker" },
+            new TagDef { Key = "tag_negative", Name = "Negative Tag", Text = "Next base edition Joker in the shop becomes Negative and free" },
+            new TagDef { Key = "tag_foil", Name = "Foil Tag", Text = "Next base edition Joker in the shop becomes Foil and free" },
+            new TagDef { Key = "tag_holo", Name = "Holographic Tag", Text = "Next base edition Joker in the shop becomes Holographic and free" },
+            new TagDef { Key = "tag_polychrome", Name = "Polychrome Tag", Text = "Next base edition Joker in the shop becomes Polychrome and free" },
+            new TagDef { Key = "tag_investment", Name = "Investment Tag", Text = "After defeating the Boss Blind, gain $25" },
+            new TagDef { Key = "tag_voucher", Name = "Voucher Tag", Text = "Adds one Voucher to the next shop" },
+            new TagDef { Key = "tag_boss", Name = "Boss Tag", Text = "Rerolls the Boss Blind" },
+            new TagDef { Key = "tag_standard", Name = "Standard Tag", Text = "Gives a free Mega Standard Pack", GrantsPackKey = "p_standard_mega_1" },
+            new TagDef { Key = "tag_charm", Name = "Charm Tag", Text = "Gives a free Mega Arcana Pack", GrantsPackKey = "p_arcana_mega_1" },
+            new TagDef { Key = "tag_meteor", Name = "Meteor Tag", Text = "Gives a free Mega Celestial Pack", GrantsPackKey = "p_celestial_mega_1" },
+            new TagDef { Key = "tag_buffoon", Name = "Buffoon Tag", Text = "Gives a free Mega Buffoon Pack", GrantsPackKey = "p_buffoon_mega_1" },
+            new TagDef { Key = "tag_handy", Name = "Handy Tag", Text = "Gives $1 per played hand this run" },
+            new TagDef { Key = "tag_garbage", Name = "Garbage Tag", Text = "Gives $1 per unused discard this run" },
+            new TagDef { Key = "tag_ethereal", Name = "Ethereal Tag", Text = "Gives a free Spectral Pack", GrantsPackKey = "p_spectral_normal_1" },
+            new TagDef { Key = "tag_coupon", Name = "Coupon Tag", Text = "Initial cards and packs in the next shop are free" },
+            new TagDef { Key = "tag_double", Name = "Double Tag", Text = "Gives a copy of the next selected Tag" },
+            new TagDef { Key = "tag_juggle", Name = "Juggle Tag", Text = "+3 hand size next round" },
+            new TagDef { Key = "tag_d_six", Name = "D6 Tag", Text = "Rerolls in the next shop start at $0" },
+            new TagDef { Key = "tag_top_up", Name = "Top-up Tag", Text = "Creates up to 2 Common Jokers" },
+            new TagDef { Key = "tag_skip", Name = "Speed Tag", Text = "Gives $5 per skipped blind this run" },
+            new TagDef { Key = "tag_orbital", Name = "Orbital Tag", Text = "Upgrades a random poker hand by 3 levels" },
+            new TagDef { Key = "tag_economy", Name = "Economy Tag", Text = "Doubles your money (max $40)" },
+        }.ToDictionary(t => t.Key, t => t, StringComparer.Ordinal);
+
         public static PackDef PackFromCenterKey(string centerKey)
         {
             if (string.IsNullOrEmpty(centerKey))

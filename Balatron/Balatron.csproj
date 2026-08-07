@@ -8,17 +8,26 @@
 
   <ItemGroup>
     <None Remove="Resources\\app_icon.ico" />
-    <None Remove="Resources\\joker_art.png" />
     <None Remove="Resources\\m6x11plus.ttf" />
-    <None Include="Resources\joker_art.png" />
     <Resource Include="Resources\\app_icon.ico" />
-    <Resource Include="Resources\\joker_art.png" />
-    <Resource Include="Resources\\tarots_art.png" />
-    <Resource Include="Resources\\enhancers_art.png" />
-    <Resource Include="Resources\\stickers_art.png" />
-    <Resource Include="Resources\\boosters_art.png" />
-    <Resource Include="Resources\\vouchers_art.png" />
     <Resource Include="Resources\\m6x11plus.ttf" />
+    <!-- 1x sheets drive the compact cards, 2x the full-size ones -->
+    <Resource Include="Resources\\jokers_art.png" />
+    <Resource Include="Resources\\jokers_2x_art.png" />
+    <Resource Include="Resources\\tarots_art.png" />
+    <Resource Include="Resources\\tarots_2x_art.png" />
+    <Resource Include="Resources\\enhancers_art.png" />
+    <Resource Include="Resources\\enhancers_2x_art.png" />
+    <Resource Include="Resources\\stickers_art.png" />
+    <Resource Include="Resources\\stickers_2x_art.png" />
+    <Resource Include="Resources\\boosters_art.png" />
+    <Resource Include="Resources\\boosters_2x_art.png" />
+    <Resource Include="Resources\\vouchers_art.png" />
+    <Resource Include="Resources\\vouchers_2x_art.png" />
+    <Resource Include="Resources\\tags_art.png" />
+    <Resource Include="Resources\\tags_2x_art.png" />
+    <Resource Include="Resources\\deck_art.png" />
+    <Resource Include="Resources\\deck_2x_art.png" />
     <Resource Include="Shaders\\foil.ps" />
     <Resource Include="Shaders\\holo.ps" />
     <Resource Include="Shaders\\polychrome.ps" />

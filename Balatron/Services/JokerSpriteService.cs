@@ -9,60 +9,80 @@ namespace Balatron.Services
 {
     public static class JokerSpriteService
     {
-        private const int TileWidth = 142;
-        private const int TileHeight = 190;
         private const int Columns = 10;
         private const int Rows = 16;
 
-        private static readonly BitmapImage SpriteSheet = LoadSpriteSheet();
+        private static readonly SpriteSheet Sheet1x = new("jokers_art.png", Columns, Rows);
+        private static readonly SpriteSheet Sheet2x = new("jokers_2x_art.png", Columns, Rows);
 
         private static readonly IReadOnlyDictionary<string, IReadOnlyList<(int Column, int Row)>> TileAssignments
             = JokerSpriteTileMap.Assignments;
 
-        public static IReadOnlyList<ImageSource> GetSpriteLayers(string centerKey)
+        /// <summary>
+        /// Joker art layers for a center key. <paramref name="scale"/> picks the
+        /// 1x or 2x sheet — use 1x for the compact cards so the art lands 1:1.
+        /// </summary>
+        public static IReadOnlyList<ImageSource> GetSpriteLayers(string centerKey, int scale = 2)
         {
-            if (SpriteSheet == null || string.IsNullOrWhiteSpace(centerKey))
+            if (string.IsNullOrWhiteSpace(centerKey))
                 return Array.Empty<ImageSource>();
 
-            var tiles = ResolveTiles(centerKey).ToList();
-            var layers = new List<ImageSource>();
+            var sheet = scale >= 2 ? Sheet2x : Sheet1x;
+            if (!TileAssignments.TryGetValue(centerKey, out var coordinates))
+                return Array.Empty<ImageSource>();
 
-            foreach (var tile in tiles)
-            {
-                var rect = GetTileRectangle(tile);
-                if (rect.Width <= 0 || rect.Height <= 0)
-                    continue;
-
-                layers.Add(new CroppedBitmap(SpriteSheet, rect));
-            }
-
-            return layers;
+            return coordinates
+                .Select(coord => sheet.GetTile(coord.Column, coord.Row))
+                .Where(tile => tile != null)
+                .ToList();
         }
+    }
 
-        private static IEnumerable<int> ResolveTiles(string centerKey)
+    /// <summary>A uniform grid of sprites, cropped and cached on demand.</summary>
+    internal sealed class SpriteSheet
+    {
+        private readonly BitmapImage _sheet;
+        private readonly int _tileWidth;
+        private readonly int _tileHeight;
+        private readonly Dictionary<(int, int), ImageSource> _cache = new();
+
+        public SpriteSheet(string resourceName, int columns, int rows)
         {
-            if (TileAssignments.TryGetValue(centerKey, out var coordinates))
-                return coordinates.Select(coord => coord.Column + (coord.Row * Columns));
-
-            return Enumerable.Empty<int>();
+            _sheet = Load(resourceName);
+            if (_sheet == null)
+                return;
+            _tileWidth = _sheet.PixelWidth / columns;
+            _tileHeight = _sheet.PixelHeight / rows;
         }
 
-        private static Int32Rect GetTileRectangle(int tileIndex)
+        public ImageSource GetTile(int col, int row)
         {
-            var col = tileIndex % Columns;
-            var row = tileIndex / Columns;
-            var x = col * TileWidth;
-            var y = row * TileHeight;
-            return new Int32Rect(x, y, TileWidth, TileHeight);
+            if (_sheet == null || _tileWidth <= 0 || _tileHeight <= 0)
+                return null;
+
+            if (_cache.TryGetValue((col, row), out var cached))
+                return cached;
+
+            var rect = new Int32Rect(col * _tileWidth, row * _tileHeight, _tileWidth, _tileHeight);
+            if (rect.X < 0 || rect.Y < 0
+                || rect.X + rect.Width > _sheet.PixelWidth
+                || rect.Y + rect.Height > _sheet.PixelHeight)
+                return null;
+
+            var tile = new CroppedBitmap(_sheet, rect);
+            tile.Freeze();
+            _cache[(col, row)] = tile;
+            return tile;
         }
 
-        private static BitmapImage LoadSpriteSheet()
+        private static BitmapImage Load(string resourceName)
         {
             try
             {
                 var image = new BitmapImage();
                 image.BeginInit();
-                image.UriSource = new Uri("pack://application:,,,/Balatron;component/Resources/joker_art.png", UriKind.Absolute);
+                image.UriSource = new Uri(
+                    $"pack://application:,,,/Balatron;component/Resources/{resourceName}", UriKind.Absolute);
                 image.CacheOption = BitmapCacheOption.OnLoad;
                 image.EndInit();
                 image.Freeze();

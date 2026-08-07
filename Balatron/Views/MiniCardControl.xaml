@@ -33,13 +33,30 @@
             </Style>
         </Border.Style>
         <StackPanel>
+            <TextBlock Text="{Binding Caption}"
+                       FontSize="14"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap"
+                       Foreground="#B8B6C1"
+                       Margin="0,0,0,3">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Caption}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
             <Grid x:Name="ArtGrid" views:PixelArt.Scale="1">
-                <ItemsControl ItemsSource="{Binding SpriteLayers}">
+                <ItemsControl ItemsSource="{Binding MiniSpriteLayers}">
                     <ItemsControl.Style>
                         <Style TargetType="ItemsControl">
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding HasSprite}" Value="True">
+                                <DataTrigger Binding="{Binding HasMiniSprite}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
                                 </DataTrigger>
                             </Style.Triggers>
@@ -63,7 +80,7 @@
                         <Style TargetType="Border">
                             <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding HasSprite}" Value="True">
+                                <DataTrigger Binding="{Binding HasMiniSprite}" Value="True">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </DataTrigger>
                             </Style.Triggers>
@@ -75,6 +92,33 @@
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center" />
                 </Border>
+                <!-- Rank + suit for playing cards -->
+                <TextBlock Text="{Binding OverlayText}"
+                           Foreground="{Binding OverlayForeground}"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                <!-- Destroyed cards get crossed out -->
+                <Path Stroke="#E84C3D"
+                      StrokeThickness="5"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      Stretch="Fill"
+                      Margin="6"
+                      Opacity="0.9"
+                      Data="M 0,0 L 1,1 M 1,0 L 0,1">
+                    <Path.Style>
+                        <Style TargetType="Path">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsDestroyed}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Path.Style>
+                </Path>
             </Grid>
             <TextBlock Text="{Binding Name}"
                        FontSize="14"
@@ -84,6 +128,25 @@
                        MaxHeight="38"
                        Margin="0,3,0,0"
                        Foreground="{StaticResource BalatroWhite}" />
+            <TextBlock Text="{Binding Badges}"
+                       FontSize="14"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       Foreground="#FFD966">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Badges}" Value="">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Badges}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
         </StackPanel>
     </Border>
 </UserControl>

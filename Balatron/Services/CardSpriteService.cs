@@ -1,79 +1,41 @@
 using System;
 using System.Collections.Generic;
-using System.Windows;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace Balatron.Services
 {
     /// <summary>
-    /// Sprite lookup for the non-joker art sheets (all 71x95 tile grids):
-    /// tarots/planets/spectrals, enhancements/seals, joker stickers,
-    /// booster packs and vouchers.
+    /// Sprite lookup for the non-joker art sheets. Every sheet ships as a 1x
+    /// and a 2x variant; pass the scale that matches the display box so the
+    /// art lands on a whole-pixel ratio (1x for the compact cards, 2x for the
+    /// full-size ones).
     /// </summary>
     public static class CardSpriteService
     {
-        private sealed class Atlas
+        private sealed class SheetPair
         {
-            private readonly BitmapImage _sheet;
-            private readonly int _tileWidth;
-            private readonly int _tileHeight;
-            private readonly Dictionary<(int Col, int Row), ImageSource> _cache = new();
+            private readonly SpriteSheet _oneX;
+            private readonly SpriteSheet _twoX;
 
-            public Atlas(string resourceName, int columns, int rows)
+            public SheetPair(string baseName, int columns, int rows)
             {
-                _sheet = LoadSheet(resourceName);
-                if (_sheet != null)
-                {
-                    _tileWidth = _sheet.PixelWidth / columns;
-                    _tileHeight = _sheet.PixelHeight / rows;
-                }
+                _oneX = new SpriteSheet($"{baseName}_art.png", columns, rows);
+                _twoX = new SpriteSheet($"{baseName}_2x_art.png", columns, rows);
             }
 
-            public ImageSource GetTile(int col, int row)
-            {
-                if (_sheet == null)
-                    return null;
-
-                if (_cache.TryGetValue((col, row), out var cached))
-                    return cached;
-
-                var rect = new Int32Rect(col * _tileWidth, row * _tileHeight, _tileWidth, _tileHeight);
-                if (rect.X + rect.Width > _sheet.PixelWidth || rect.Y + rect.Height > _sheet.PixelHeight)
-                    return null;
-
-                var tile = new CroppedBitmap(_sheet, rect);
-                tile.Freeze();
-                _cache[(col, row)] = tile;
-                return tile;
-            }
-
-            private static BitmapImage LoadSheet(string resourceName)
-            {
-                try
-                {
-                    var image = new BitmapImage();
-                    image.BeginInit();
-                    image.UriSource = new Uri($"pack://application:,,,/Balatron;component/Resources/{resourceName}", UriKind.Absolute);
-                    image.CacheOption = BitmapCacheOption.OnLoad;
-                    image.EndInit();
-                    image.Freeze();
-                    return image;
-                }
-                catch
-                {
-                    return null;
-                }
-            }
+            public ImageSource Tile(int col, int row, int scale) =>
+                (scale >= 2 ? _twoX : _oneX).GetTile(col, row);
         }
 
-        private static readonly Atlas Tarots = new("tarots_art.png", 10, 6);
-        private static readonly Atlas Enhancers = new("enhancers_art.png", 7, 5);
-        private static readonly Atlas Stickers = new("stickers_art.png", 5, 3);
-        private static readonly Atlas Boosters = new("boosters_art.png", 4, 9);
-        private static readonly Atlas Vouchers = new("vouchers_art.png", 9, 4);
+        private static readonly SheetPair Tarots = new("tarots", 10, 6);
+        private static readonly SheetPair Enhancers = new("enhancers", 7, 5);
+        private static readonly SheetPair Stickers = new("stickers", 5, 3);
+        private static readonly SheetPair Boosters = new("boosters", 4, 9);
+        private static readonly SheetPair Vouchers = new("vouchers", 9, 4);
+        private static readonly SheetPair Tags = new("tags", 6, 5);
+        private static readonly SheetPair Deck = new("deck", 13, 4);
 
-        /// <summary>Tarot / Planet / Spectral centers → tile in the tarots atlas (game layout).</summary>
+        /// <summary>Tarot / Planet / Spectral centers → tile in the tarots atlas.</summary>
         private static readonly IReadOnlyDictionary<string, (int Col, int Row)> ConsumableTiles =
             new Dictionary<string, (int, int)>(StringComparer.Ordinal)
             {
@@ -95,7 +57,6 @@ namespace Balatron.Services
                 ["c_trance"] = (3, 5), ["c_medium"] = (4, 5), ["c_cryptid"] = (5, 5),
             };
 
-        /// <summary>Playing-card bases (enhancements + plain card) in the enhancers atlas.</summary>
         private static readonly IReadOnlyDictionary<string, (int Col, int Row)> EnhancementTiles =
             new Dictionary<string, (int, int)>(StringComparer.Ordinal)
             {
@@ -135,7 +96,6 @@ namespace Balatron.Services
                 ["p_buffoon_jumbo_1"] = (2, 8), ["p_buffoon_mega_1"] = (3, 8),
             };
 
-        /// <summary>Vouchers: base tiers on rows 0/2, their upgrades directly below on rows 1/3.</summary>
         private static readonly IReadOnlyDictionary<string, (int Col, int Row)> VoucherTiles =
             new Dictionary<string, (int, int)>(StringComparer.Ordinal)
             {
@@ -153,57 +113,95 @@ namespace Balatron.Services
                 ["v_retcon"] = (6, 3), ["v_palette"] = (7, 3),
             };
 
-        public static ImageSource GetConsumableSprite(string centerKey) =>
+        /// <summary>Tag sprite positions, straight from the game's tag definitions.</summary>
+        private static readonly IReadOnlyDictionary<string, (int Col, int Row)> TagTiles =
+            new Dictionary<string, (int, int)>(StringComparer.Ordinal)
+            {
+                ["tag_uncommon"] = (0, 0), ["tag_rare"] = (1, 0), ["tag_negative"] = (2, 0),
+                ["tag_foil"] = (3, 0), ["tag_coupon"] = (4, 0), ["tag_double"] = (5, 0),
+                ["tag_holo"] = (0, 1), ["tag_polychrome"] = (1, 1), ["tag_investment"] = (2, 1),
+                ["tag_voucher"] = (3, 1), ["tag_top_up"] = (4, 1), ["tag_juggle"] = (5, 1),
+                ["tag_boss"] = (0, 2), ["tag_standard"] = (1, 2), ["tag_charm"] = (2, 2),
+                ["tag_meteor"] = (3, 2), ["tag_buffoon"] = (4, 2), ["tag_orbital"] = (5, 2),
+                ["tag_skip"] = (0, 3), ["tag_handy"] = (1, 3), ["tag_garbage"] = (2, 3),
+                ["tag_ethereal"] = (3, 3), ["tag_economy"] = (4, 3), ["tag_d_six"] = (5, 3),
+            };
+
+        public static ImageSource GetConsumableSprite(string centerKey, int scale = 2) =>
             centerKey != null && ConsumableTiles.TryGetValue(centerKey, out var pos)
-                ? Tarots.GetTile(pos.Col, pos.Row)
+                ? Tarots.Tile(pos.Col, pos.Row, scale)
                 : null;
 
         /// <summary>Base layer for a playing card: its enhancement art, or the plain card.</summary>
-        public static ImageSource GetPlayingCardBase(string enhancementKey)
+        public static ImageSource GetPlayingCardBase(string enhancementKey, int scale = 2)
         {
             var key = enhancementKey != null && EnhancementTiles.ContainsKey(enhancementKey)
                 ? enhancementKey
                 : "c_base";
             var pos = EnhancementTiles[key];
-            return Enhancers.GetTile(pos.Col, pos.Row);
+            return Enhancers.Tile(pos.Col, pos.Row, scale);
         }
 
-        public static ImageSource GetSealSprite(string sealName) =>
+        /// <summary>
+        /// The rank/suit pips for a card key like "H_K", drawn over the base.
+        /// Stone cards have no face.
+        /// </summary>
+        public static ImageSource GetPlayingCardFace(string cardKey, int scale = 2)
+        {
+            if (string.IsNullOrEmpty(cardKey) || cardKey.Length < 3)
+                return null;
+
+            var row = cardKey[0] switch { 'H' => 0, 'C' => 1, 'D' => 2, 'S' => 3, _ => -1 };
+            var col = cardKey.Substring(2) switch
+            {
+                "2" => 0, "3" => 1, "4" => 2, "5" => 3, "6" => 4, "7" => 5, "8" => 6, "9" => 7,
+                "T" => 8, "J" => 9, "Q" => 10, "K" => 11, "A" => 12,
+                _ => -1
+            };
+            return row < 0 || col < 0 ? null : Deck.Tile(col, row, scale);
+        }
+
+        public static ImageSource GetSealSprite(string sealName, int scale = 2) =>
             sealName != null && SealTiles.TryGetValue(sealName, out var pos)
-                ? Enhancers.GetTile(pos.Col, pos.Row)
+                ? Enhancers.Tile(pos.Col, pos.Row, scale)
                 : null;
 
-        public static IReadOnlyList<ImageSource> GetStickerSprites(bool eternal, bool perishable, bool rental)
+        public static IReadOnlyList<ImageSource> GetStickerSprites(bool eternal, bool perishable, bool rental, int scale = 2)
         {
             var layers = new List<ImageSource>();
-            if (eternal) Add(layers, Stickers.GetTile(0, 0));
-            if (perishable) Add(layers, Stickers.GetTile(0, 2));
-            if (rental) Add(layers, Stickers.GetTile(1, 2));
+            Add(Stickers.Tile(0, 0, scale), eternal);
+            Add(Stickers.Tile(0, 2, scale), perishable);
+            Add(Stickers.Tile(1, 2, scale), rental);
             return layers;
 
-            static void Add(List<ImageSource> list, ImageSource tile)
+            void Add(ImageSource tile, bool active)
             {
-                if (tile != null) list.Add(tile);
+                if (active && tile != null) layers.Add(tile);
             }
         }
 
-        public static ImageSource GetPackSprite(string centerKey)
+        public static ImageSource GetPackSprite(string centerKey, int scale = 2)
         {
             if (centerKey == null)
                 return null;
             if (PackTiles.TryGetValue(centerKey, out var pos))
-                return Boosters.GetTile(pos.Col, pos.Row);
+                return Boosters.Tile(pos.Col, pos.Row, scale);
 
             // Unknown variant suffix: fall back to the first art of the pack kind.
             var def = Prediction.BalatroItems.PackFromCenterKey(centerKey);
             return def != null && PackTiles.TryGetValue(def.KeyPrefix + "_1", out var fallback)
-                ? Boosters.GetTile(fallback.Col, fallback.Row)
+                ? Boosters.Tile(fallback.Col, fallback.Row, scale)
                 : null;
         }
 
-        public static ImageSource GetVoucherSprite(string centerKey) =>
+        public static ImageSource GetVoucherSprite(string centerKey, int scale = 2) =>
             centerKey != null && VoucherTiles.TryGetValue(centerKey, out var pos)
-                ? Vouchers.GetTile(pos.Col, pos.Row)
+                ? Vouchers.Tile(pos.Col, pos.Row, scale)
+                : null;
+
+        public static ImageSource GetTagSprite(string tagKey, int scale = 2) =>
+            tagKey != null && TagTiles.TryGetValue(tagKey, out var pos)
+                ? Tags.Tile(pos.Col, pos.Row, scale)
                 : null;
     }
 }

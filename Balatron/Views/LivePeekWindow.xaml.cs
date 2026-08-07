@@ -25,13 +25,6 @@ namespace Balatron.Views
         public ICommand PeekCommand { get; init; }
     }
 
-    public sealed class VoucherLineViewModel
-    {
-        public string Header { get; init; }
-        public string Name { get; init; }
-        public System.Windows.Media.ImageSource Sprite { get; init; }
-        public object Tooltip { get; init; }
-    }
 
     public partial class LivePeekWindow : Window
     {
@@ -58,15 +51,17 @@ namespace Balatron.Views
         private string _packPeekKind;
 
         public ObservableCollection<PeekCardViewModel> Owned { get; } = new();
+        public ObservableCollection<PeekCardViewModel> Tags { get; } = new();
         public ObservableCollection<PeekCardViewModel> ShopNow { get; } = new();
         public ObservableCollection<PackOfferViewModel> Packs { get; } = new();
         public ObservableCollection<RerollGroupViewModel> Rerolls { get; } = new();
-        public ObservableCollection<VoucherLineViewModel> VoucherLines { get; } = new();
+        public ObservableCollection<PeekCardViewModel> VoucherLines { get; } = new();
 
         private LivePeekWindow()
         {
             InitializeComponent();
             OwnedList.ItemsSource = Owned;
+            TagsList.ItemsSource = Tags;
             ShopNowList.ItemsSource = ShopNow;
             PacksList.ItemsSource = Packs;
             RerollsList.ItemsSource = Rerolls;
@@ -110,19 +105,35 @@ namespace Balatron.Views
             }
             foreach (var consumable in _snapshot.OwnedConsumables)
             {
-                engine.TryPredictOutcome(consumable.CenterKey, out var useText, out var useCards);
-                Owned.Add(PeekCardViewModel.FromOwnedConsumable(consumable, useText, useCards));
+                engine.TryPredictOutcome(consumable.CenterKey, out var useText, out var useCards, out var useDestroyed);
+                Owned.Add(PeekCardViewModel.FromOwnedConsumable(consumable, useText, useCards, useDestroyed));
             }
             OwnedEmptyText.Visibility = Owned.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+            // Tags belong to the ante's blinds, so they're worth showing even
+            // outside the shop. Defeated blinds have already spent theirs.
+            Tags.Clear();
+            foreach (var blind in new[] { "Small", "Big" })
+            {
+                if (!_snapshot.BlindTags.TryGetValue(blind, out var tagKey) || string.IsNullOrEmpty(tagKey))
+                    continue;
+                if (_snapshot.BlindStates.TryGetValue(blind, out var state) && state == "Defeated")
+                    continue;
+
+                engine.TryPredictTagOutcome(tagKey, out var tagText, out var tagCards);
+                Tags.Add(PeekCardViewModel.FromTag(tagKey, $"Skip {blind}", tagText, tagCards));
+            }
+            TagsEmptyText.Visibility = Tags.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
             ShopNow.Clear();
             foreach (var card in _snapshot.ShopCards)
             {
                 string outcomeText = null;
                 System.Collections.Generic.IReadOnlyList<PredictedCard> outcomeCards = null;
+                System.Collections.Generic.IReadOnlyList<PredictedCard> destroyedCards = null;
                 if (card.CenterKey != null && card.CenterKey.StartsWith("c_"))
-                    engine.TryPredictOutcome(card.CenterKey, out outcomeText, out outcomeCards);
-                ShopNow.Add(PeekCardViewModel.FromShopCard(card, outcomeText, outcomeCards));
+                    engine.TryPredictOutcome(card.CenterKey, out outcomeText, out outcomeCards, out destroyedCards);
+                ShopNow.Add(PeekCardViewModel.FromShopCard(card, outcomeText, outcomeCards, destroyedCards));
             }
             ShopEmptyText.Visibility = ShopNow.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -264,58 +275,28 @@ namespace Balatron.Views
         {
             VoucherLines.Clear();
 
-            // The round's voucher lives in GAME.current_round.voucher, so it
-            // is known even while playing a blind.
+            // The voucher slot only rerolls when the ante does, so it reads per
+            // ante rather than per shop. This ante's is in the save (set even
+            // while playing a blind); the next comes off the "Voucher"+ante stream.
             var currentKey = !string.IsNullOrEmpty(_snapshot.CurrentRoundVoucher)
                 ? _snapshot.CurrentRoundVoucher
                 : _snapshot.VoucherCenter;
+            if (string.IsNullOrEmpty(currentKey))
+                currentKey = engine.PredictShopVoucher(_snapshot.Ante)?.Key;
             if (!string.IsNullOrEmpty(currentKey))
-                VoucherLines.Add(VoucherLine("This shop", currentKey));
+                VoucherLines.Add(VoucherLine("This ante", currentKey));
 
-            var smallPending = BlindPending("Small");
-            var bigPending = BlindPending("Big");
-
-            var nextShopAnte = smallPending || bigPending ? _snapshot.Ante : _snapshot.Ante + 1;
-            var next = engine.PredictShopVoucher(nextShopAnte);
+            var next = engine.PredictShopVoucher(_snapshot.Ante + 1);
             if (next != null)
-                VoucherLines.Add(VoucherLine("Next shop", next.Key));
+                VoucherLines.Add(VoucherLine("Next ante", next.Key));
 
-            var tagBlinds = new List<string>();
-            if (smallPending && _snapshot.BlindTags.TryGetValue("Small", out var smallTag) && smallTag == "tag_voucher")
-                tagBlinds.Add("Small");
-            if (bigPending && _snapshot.BlindTags.TryGetValue("Big", out var bigTag) && bigTag == "tag_voucher")
-                tagBlinds.Add("Big");
-            if (tagBlinds.Count > 0)
-            {
-                var tagVouchers = engine.PredictTagVouchers(tagBlinds.Count);
-                for (var i = 0; i < tagBlinds.Count; i++)
-                    VoucherLines.Add(VoucherLine($"Skip {tagBlinds[i]} Blind", tagVouchers[i].Key));
-            }
-
-            VoucherPanel.Visibility = VoucherLines.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            var hasVouchers = VoucherLines.Count > 0;
+            VoucherPanel.Visibility = hasVouchers ? Visibility.Visible : Visibility.Collapsed;
+            VouchersHeader.Visibility = hasVouchers ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private bool BlindPending(string blind) =>
-            _snapshot.BlindStates.TryGetValue(blind, out var state)
-            && state is "Upcoming" or "Current" or "Select";
-
-        private static VoucherLineViewModel VoucherLine(string header, string key)
-        {
-            BalatroItems.VouchersByKey.TryGetValue(key ?? string.Empty, out var def);
-            var name = def?.Name ?? key;
-            return new VoucherLineViewModel
-            {
-                Header = header,
-                Name = name,
-                Sprite = Services.CardSpriteService.GetVoucherSprite(key),
-                Tooltip = new PeekTooltipViewModel
-                {
-                    Title = name,
-                    Subtitle = "Voucher",
-                    Body = def?.Text
-                }
-            };
-        }
+        private static PeekCardViewModel VoucherLine(string header, string key) =>
+            PeekCardViewModel.FromVoucher(key, header);
 
         private void SetStatus(string message, bool healthy)
         {

@@ -13,7 +13,8 @@ namespace Balatron.Services.Prediction
         Tarot,
         Planet,
         Spectral,
-        PlayingCard
+        PlayingCard,
+        Voucher
     }
 
     public sealed class PredictedCard
@@ -35,6 +36,9 @@ namespace Balatron.Services.Prediction
         // random outcomes). Outcome cards never carry outcomes themselves.
         public string OutcomeText { get; set; }
         public IReadOnlyList<PredictedCard> OutcomeCards { get; set; }
+
+        /// <summary>Cards this effect would destroy, shown crossed out.</summary>
+        public IReadOnlyList<PredictedCard> DestroyedCards { get; set; }
     }
 
     public sealed class ShopRerollPrediction
@@ -441,7 +445,32 @@ namespace Balatron.Services.Prediction
         /// RNG stream, so this stays valid regardless of shop actions.
         /// Returns false when the card has no predictable random outcome.
         /// </summary>
-        public bool TryPredictOutcome(string centerKey, out string text, out IReadOnlyList<PredictedCard> cards)
+        public bool TryPredictOutcome(string centerKey, out string text, out IReadOnlyList<PredictedCard> cards) =>
+            TryPredictOutcome(centerKey, out text, out cards, out _);
+
+        public bool TryPredictOutcome(string centerKey, out string text,
+            out IReadOnlyList<PredictedCard> cards, out IReadOnlyList<PredictedCard> destroyed)
+        {
+            text = null;
+            cards = null;
+            destroyed = null;
+
+            switch (centerKey)
+            {
+                case "c_familiar":
+                    return TryPredictHandConjure("Familiar", 3, out text, out cards, out destroyed);
+                case "c_grim":
+                    return TryPredictHandConjure("Grim", 2, out text, out cards, out destroyed);
+                case "c_incantation":
+                    return TryPredictHandConjure("Incantation", 4, out text, out cards, out destroyed);
+                case "c_immolate":
+                    return TryPredictImmolate(out text, out destroyed);
+            }
+
+            return TryPredictSimpleOutcome(centerKey, out text, out cards);
+        }
+
+        private bool TryPredictSimpleOutcome(string centerKey, out string text, out IReadOnlyList<PredictedCard> cards)
         {
             text = null;
             cards = null;
@@ -502,17 +531,6 @@ namespace Balatron.Services.Prediction
                     return true;
                 }
 
-                case "c_familiar":
-                    return TryPredictHandConjure("Familiar", 3, out text, out cards);
-
-                case "c_grim":
-                    return TryPredictHandConjure("Grim", 2, out text, out cards);
-
-                case "c_incantation":
-                    return TryPredictHandConjure("Incantation", 4, out text, out cards);
-
-                case "c_immolate":
-                    return TryPredictImmolate(out text, out cards);
 
                 case "c_sigil":
                 {
@@ -642,10 +660,11 @@ namespace Balatron.Services.Prediction
 
         /// <summary>Familiar / Grim / Incantation: destroy one card in hand, conjure enhanced ones.</summary>
         private bool TryPredictHandConjure(string effect, int count, out string text,
-            out IReadOnlyList<PredictedCard> cards)
+            out IReadOnlyList<PredictedCard> cards, out IReadOnlyList<PredictedCard> destroyedCards)
         {
             text = null;
             cards = null;
+            destroyedCards = null;
 
             var (hand, projected) = EffectiveHand();
             if (hand.Count == 0)
@@ -700,16 +719,15 @@ namespace Balatron.Services.Prediction
             }
 
             cards = created;
-            text = projected
-                ? $"With the hand a pack draws: destroys {BalatroItems.CardDisplayName(destroyed.CardKey)}, creates:"
-                : $"Destroys {BalatroItems.CardDisplayName(destroyed.CardKey)}, creates:";
+            destroyedCards = new[] { HandCard(destroyed) };
+            text = projected ? "With the hand a pack draws:" : null;
             return true;
         }
 
-        private bool TryPredictImmolate(out string text, out IReadOnlyList<PredictedCard> cards)
+        private bool TryPredictImmolate(out string text, out IReadOnlyList<PredictedCard> destroyedCards)
         {
             text = null;
-            cards = null;
+            destroyedCards = null;
 
             var (hand, projected) = EffectiveHand();
             if (hand.Count == 0)
@@ -727,8 +745,8 @@ namespace Balatron.Services.Prediction
                 (shuffled[i - 1], shuffled[j - 1]) = (shuffled[j - 1], shuffled[i - 1]);
             }
 
-            cards = shuffled.Take(5).Select(HandCard).ToList();
-            text = projected ? "With the hand a pack draws, destroys:" : "Destroys:";
+            destroyedCards = shuffled.Take(5).Select(HandCard).ToList();
+            text = projected ? "With the hand a pack draws:" : null;
             return true;
         }
 
@@ -930,12 +948,92 @@ namespace Balatron.Services.Prediction
         /// <summary>Attaches the outcome prediction to a freshly generated consumable card.</summary>
         private PredictedCard WithOutcome(PredictedCard card)
         {
-            if (TryPredictOutcome(card.CenterKey, out var text, out var cards))
+            if (TryPredictOutcome(card.CenterKey, out var text, out var cards, out var destroyed))
             {
                 card.OutcomeText = text;
                 card.OutcomeCards = cards;
+                card.DestroyedCards = destroyed;
             }
             return card;
+        }
+
+        /// <summary>
+        /// What a tag would hand you. Tags that grant a pack consume the same
+        /// per-kind RNG streams a shop pack would, and they fire before the
+        /// shop, so this is the front of that kind's sequence.
+        /// </summary>
+        public bool TryPredictTagOutcome(string tagKey, out string text, out IReadOnlyList<PredictedCard> cards)
+        {
+            text = null;
+            cards = null;
+
+            if (tagKey == null || !BalatroItems.TagsByKey.TryGetValue(tagKey, out var tag))
+                return false;
+
+            if (tag.GrantsPackKey != null)
+            {
+                var def = BalatroItems.PackFromCenterKey(tag.GrantsPackKey);
+                if (def == null)
+                    return false;
+                cards = PredictPackContents(tag.GrantsPackKey)
+                    .Select(c => c).ToList();
+                text = $"{def.Name} — choose {def.Choices} of {def.CardCount}:";
+                return cards.Count > 0;
+            }
+
+            switch (tagKey)
+            {
+                case "tag_uncommon":
+                case "tag_rare":
+                {
+                    var rng = FreshRng();
+                    var source = tagKey == "tag_rare" ? "rta" : "uta";
+                    var rarity = tagKey == "tag_rare" ? 3 : 2;
+                    cards = new[]
+                    {
+                        NextJoker(rng, source, PackExclusions(),
+                            new HashSet<string>(StringComparer.Ordinal), forcedRarity: rarity)
+                    };
+                    text = "Free in the next shop:";
+                    return true;
+                }
+
+                case "tag_top_up":
+                {
+                    var rng = FreshRng();
+                    var exclusions = PackExclusions();
+                    var temp = new HashSet<string>(StringComparer.Ordinal);
+                    cards = new[]
+                    {
+                        NextJoker(rng, "top", exclusions, temp, forcedRarity: 1),
+                        NextJoker(rng, "top", exclusions, temp, forcedRarity: 1)
+                    };
+                    text = "Creates:";
+                    return true;
+                }
+
+                case "tag_voucher":
+                {
+                    var voucher = PredictTagVouchers(1).FirstOrDefault();
+                    if (voucher == null)
+                        return false;
+                    cards = new[]
+                    {
+                        new PredictedCard
+                        {
+                            Kind = PredictedKind.Voucher,
+                            CenterKey = voucher.Key,
+                            Name = voucher.Name,
+                            Text = voucher.Text
+                        }
+                    };
+                    text = "Adds to the next shop:";
+                    return true;
+                }
+
+                default:
+                    return false;
+            }
         }
 
         // ------------------------------------------------------------------

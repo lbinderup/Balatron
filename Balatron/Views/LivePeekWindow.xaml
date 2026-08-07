@@ -106,33 +106,51 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <TextBlock Text="Shop right now"
-                               FontSize="18"
-                               Margin="4,6,0,2"
-                               Foreground="#FFD966" />
-                    <TextBlock x:Name="ShopEmptyText"
-                               FontSize="14"
-                               Foreground="#B8B6C1"
-                               Margin="4,0,0,4"
-                               Text="No shop cards in the current save." />
-                    <Grid>
+                    <!-- Tags on the left, vouchers pinned right -->
+                    <Grid Margin="0,10,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <ItemsControl x:Name="ShopNowList">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <views:PeekCardControl />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Text="Tags this ante"
+                                   FontSize="18"
+                                   Margin="4,0,0,2"
+                                   Foreground="#FFD966" />
+                        <TextBlock x:Name="VouchersHeader"
+                                   Grid.Column="1"
+                                   Visibility="Collapsed"
+                                   Text="Vouchers"
+                                   FontSize="18"
+                                   Margin="8,0,4,2"
+                                   Foreground="#FFD966" />
+
+                        <StackPanel Grid.Row="1">
+                            <TextBlock x:Name="TagsEmptyText"
+                                       FontSize="14"
+                                       Foreground="#B8B6C1"
+                                       Margin="4,0,0,4"
+                                       Text="No tags offered." />
+                            <ItemsControl x:Name="TagsList">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <views:MiniCardControl />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
                         <Border x:Name="VoucherPanel"
+                                Grid.Row="1"
                                 Grid.Column="1"
                                 Visibility="Collapsed"
                                 Background="{StaticResource BalatroPanel}"
@@ -140,37 +158,44 @@
                                 BorderThickness="2"
                                 CornerRadius="10"
                                 Margin="4"
-                                Padding="8,6"
+                                Padding="4"
                                 VerticalAlignment="Top">
-                            <ItemsControl x:Name="VoucherLinesList" Width="150">
+                            <ItemsControl x:Name="VoucherLinesList">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <StackPanel Margin="0,2,0,6"
-                                                    ToolTip="{Binding Tooltip}"
-                                                    ToolTipService.InitialShowDelay="200"
-                                                    ToolTipService.ShowDuration="30000">
-                                            <TextBlock Text="{Binding Header}"
-                                                       FontSize="14"
-                                                       Foreground="#B8B6C1" />
-                                            <StackPanel Orientation="Horizontal">
-                                                <Image Source="{Binding Sprite}"
-                                                       Height="47.5"
-                                                       Margin="0,2,6,0"
-                                                       Stretch="Uniform"
-                                                       RenderOptions.BitmapScalingMode="HighQuality" />
-                                                <TextBlock Text="{Binding Name}"
-                                                           FontSize="16"
-                                                           TextWrapping="Wrap"
-                                                           MaxWidth="94"
-                                                           VerticalAlignment="Center"
-                                                           Foreground="{StaticResource BalatroWhite}" />
-                                            </StackPanel>
-                                        </StackPanel>
+                                        <views:MiniCardControl />
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </Border>
                     </Grid>
+
+                    <TextBlock Text="Shop right now"
+                               FontSize="18"
+                               Margin="4,10,0,2"
+                               Foreground="#FFD966" />
+                    <TextBlock x:Name="ShopEmptyText"
+                               FontSize="14"
+                               Foreground="#B8B6C1"
+                               Margin="4,0,0,4"
+                               Text="No shop cards in the current save." />
+                    <ItemsControl x:Name="ShopNowList">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <views:PeekCardControl />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
                     <TextBlock Text="Packs on offer"
                                FontSize="18"
@@ -256,7 +281,7 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <views:PeekCardControl />
+                                                <views:MiniCardControl />
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
