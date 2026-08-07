@@ -16,14 +16,16 @@
         <BitmapImage UriSource="pack://application:,,,/Balatron;component/Resources/app_icon.ico" />
     </Window.Icon>
     <Window.Resources>
-        <!-- Invisible grips living in the window's transparent margin; the
-             system resize border can't be reached through it. -->
+        <!-- Grips living in the window's transparent margin, since the system
+             resize border can't be reached through it.
+             The fill is #01... rather than Transparent on purpose: this is a
+             layered window, so Windows hit-tests by pixel alpha and a fully
+             transparent grip would be clicked straight through. -->
         <Style x:Key="ResizeGrip" TargetType="Thumb">
-            <Setter Property="Background" Value="Transparent" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Thumb">
-                        <Rectangle Fill="Transparent" />
+                        <Rectangle Fill="#01000000" />
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
