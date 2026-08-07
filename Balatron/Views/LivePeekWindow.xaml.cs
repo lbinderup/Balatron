@@ -109,6 +109,7 @@ namespace Balatron.Views
                 Owned.Add(PeekCardViewModel.FromOwnedConsumable(consumable, useText, useCards, useDestroyed));
             }
             OwnedEmptyText.Visibility = Owned.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            UpdateMinimumWidth();
 
             // Tags belong to the ante's blinds, so they're worth showing even
             // outside the shop. Defeated blinds have already spent theirs.
@@ -310,6 +311,54 @@ namespace Balatron.Views
         {
             _rerollDepth += 3;
             RebuildFromSnapshot();
+        }
+
+        private void ResizeThumb_DragDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
+        {
+            var direction = (string)((FrameworkElement)sender).Tag;
+
+            if (direction.Contains('L'))
+            {
+                var width = Width - e.HorizontalChange;
+                if (width >= MinWidth)
+                {
+                    Left += e.HorizontalChange;
+                    Width = width;
+                }
+            }
+            else if (direction.Contains('R'))
+            {
+                Width = Math.Max(MinWidth, Width + e.HorizontalChange);
+            }
+
+            if (direction.Contains('T'))
+            {
+                var height = Height - e.VerticalChange;
+                if (height >= MinHeight)
+                {
+                    Top += e.VerticalChange;
+                    Height = height;
+                }
+            }
+            else if (direction.Contains('B'))
+            {
+                Height = Math.Max(MinHeight, Height + e.VerticalChange);
+            }
+        }
+
+        /// <summary>
+        /// Keep the window at least as wide as the owned jokers + consumables
+        /// row needs on a single line, so that row never wraps.
+        /// </summary>
+        private void UpdateMinimumWidth()
+        {
+            const double cardWidth = 93;   // 87 card + 3 margin either side
+            const double chrome = 74;      // window margin, border, scroll area
+            var required = Owned.Count * cardWidth + chrome;
+
+            MinWidth = Math.Max(380, Math.Min(required, SystemParameters.WorkArea.Width));
+            if (Width < MinWidth)
+                Width = MinWidth;
         }
 
         private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

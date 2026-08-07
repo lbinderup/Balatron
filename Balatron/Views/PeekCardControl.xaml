@@ -10,9 +10,7 @@
             CornerRadius="10"
             Padding="6"
             Margin="4"
-            ToolTip="{Binding Tooltip}"
-            ToolTipService.InitialShowDelay="200"
-            ToolTipService.ShowDuration="30000">
+            views:HoverPopup.Content="{Binding Tooltip}">
         <StackPanel>
             <Grid x:Name="ArtGrid" views:PixelArt.Scale="2" Margin="0,0,0,4">
                 <ItemsControl ItemsSource="{Binding SpriteLayers}">

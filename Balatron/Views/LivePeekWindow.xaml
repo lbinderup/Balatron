@@ -10,10 +10,26 @@
         AllowsTransparency="True"
         Background="Transparent"
         Topmost="True"
+        MinHeight="320"
         ResizeMode="CanResize">
     <Window.Icon>
         <BitmapImage UriSource="pack://application:,,,/Balatron;component/Resources/app_icon.ico" />
     </Window.Icon>
+    <Window.Resources>
+        <!-- Invisible grips living in the window's transparent margin; the
+             system resize border can't be reached through it. -->
+        <Style x:Key="ResizeGrip" TargetType="Thumb">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Rectangle Fill="Transparent" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid>
     <Border Margin="12"
             Background="{StaticResource BalatroDark}"
             BorderBrush="{StaticResource BalatroShadow}"
@@ -294,4 +310,30 @@
 
         </Grid>
     </Border>
+
+        <Thumb Style="{StaticResource ResizeGrip}" Tag="L" Cursor="SizeWE"
+               HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="12" Margin="0,12"
+               DragDelta="ResizeThumb_DragDelta" />
+        <Thumb Style="{StaticResource ResizeGrip}" Tag="R" Cursor="SizeWE"
+               HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="12" Margin="0,12"
+               DragDelta="ResizeThumb_DragDelta" />
+        <Thumb Style="{StaticResource ResizeGrip}" Tag="T" Cursor="SizeNS"
+               VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="12" Margin="12,0"
+               DragDelta="ResizeThumb_DragDelta" />
+        <Thumb Style="{StaticResource ResizeGrip}" Tag="B" Cursor="SizeNS"
+               VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Height="12" Margin="12,0"
+               DragDelta="ResizeThumb_DragDelta" />
+        <Thumb Style="{StaticResource ResizeGrip}" Tag="TL" Cursor="SizeNWSE"
+               HorizontalAlignment="Left" VerticalAlignment="Top" Width="14" Height="14"
+               DragDelta="ResizeThumb_DragDelta" />
+        <Thumb Style="{StaticResource ResizeGrip}" Tag="TR" Cursor="SizeNESW"
+               HorizontalAlignment="Right" VerticalAlignment="Top" Width="14" Height="14"
+               DragDelta="ResizeThumb_DragDelta" />
+        <Thumb Style="{StaticResource ResizeGrip}" Tag="BL" Cursor="SizeNESW"
+               HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="14" Height="14"
+               DragDelta="ResizeThumb_DragDelta" />
+        <Thumb Style="{StaticResource ResizeGrip}" Tag="BR" Cursor="SizeNWSE"
+               HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="14" Height="14"
+               DragDelta="ResizeThumb_DragDelta" />
+    </Grid>
 </Window>

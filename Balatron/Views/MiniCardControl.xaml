@@ -9,9 +9,7 @@
             CornerRadius="8"
             Padding="6,5"
             Margin="3"
-            ToolTip="{Binding Tooltip}"
-            ToolTipService.InitialShowDelay="150"
-            ToolTipService.ShowDuration="30000">
+            views:HoverPopup.Content="{Binding Tooltip}">
         <Border.Style>
             <!-- Border brush/thickness live here, not as local values, so the
                  "active" trigger can override them. -->
