@@ -1,5 +1,7 @@
-name: .NET WPF Build
+name: CI
 
+# Validates every push to main and produces a runnable exe for testing.
+# For a permanent, publicly downloadable build, tag a commit — see release.yml.
 on:
   push:
     branches: [ "main" ]
@@ -9,25 +11,24 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        configuration: [ Debug, Release ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET Core
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 6.0.x
 
-      - name: Publish application
-        working-directory: Balatron
-        run: dotnet publish Balatron.csproj --configuration ${{ matrix.configuration }} --output publish
+      - name: Build
+        run: dotnet build Balatron/Balatron.csproj --configuration Release
 
-      - name: Upload build artifacts
+      - name: Publish single-file exe
+        run: dotnet publish Balatron/Balatron.csproj -c Release -p:PublishProfile=FolderProfile
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: BuildOutput-${{ matrix.configuration }}
-          path: Balatron/publish
-          
+          name: Balatron-${{ github.sha }}
+          path: Balatron/bin/publish/Balatron.exe
+          retention-days: 14

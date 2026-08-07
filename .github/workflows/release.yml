@@ -1,0 +1,109 @@
+name: Release
+
+# Tag a commit to ship it:
+#   git tag v1.2.0 && git push origin v1.2.0
+# or run this workflow manually and give it a version.
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to create, e.g. v1.2.0'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          $tag = if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+            '${{ github.event.inputs.version }}'
+          } else {
+            '${{ github.ref_name }}'
+          }
+          # v1.2.0, or v1.2.0-alpha / v1.2.0-beta.2 for a pre-release
+          if ($tag -notmatch '^v(\d+\.\d+(\.\d+)?)(-[0-9A-Za-z.-]+)?$') {
+            throw "Version tag must look like v1.2.0 or v1.2.0-alpha (got '$tag')"
+          }
+          $number     = $Matches[1]          # assembly version: digits only
+          $prerelease = [bool]$Matches[3]
+          "tag=$tag"               >> $env:GITHUB_OUTPUT
+          "number=$number"         >> $env:GITHUB_OUTPUT
+          "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
+
+      # Framework-dependent single file. Settings come from FolderProfile.pubxml.
+      - name: Publish
+        shell: pwsh
+        run: |
+          dotnet publish Balatron/Balatron.csproj `
+            -c Release `
+            -p:PublishProfile=FolderProfile `
+            -p:Version=${{ steps.version.outputs.number }}
+
+      - name: Verify artifact
+        shell: pwsh
+        run: |
+          $exe = 'Balatron/bin/publish/Balatron.exe'
+          if (-not (Test-Path $exe)) { throw "Publish produced no exe at $exe" }
+          $mb = [math]::Round((Get-Item $exe).Length / 1MB, 2)
+          Write-Host "Balatron.exe is $mb MB"
+          # A self-contained build would be ~150 MB; catch the profile silently
+          # flipping, and catch a publish that dropped the bundled assemblies.
+          if ($mb -gt 50)  { throw "Exe is $mb MB - expected a framework-dependent build" }
+          if ($mb -lt 1.5) { throw "Exe is only $mb MB - assemblies missing from the bundle?" }
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ steps.version.outputs.tag }}'
+
+          # Built as an array, not a here-string: a PowerShell here-string
+          # terminator has to sit at column 0, which would break this YAML block.
+          $prereq = @(
+            '### Before you run it'
+            ''
+            'Balatron needs the **[.NET Desktop Runtime 6.0 or newer](https://dotnet.microsoft.com/download/dotnet/6.0/runtime)** (Windows x64).'
+            'Already have the .NET 8 or 9 Desktop Runtime? That works too - no need for 6 specifically.'
+            ''
+            'If it is missing, Windows offers to take you to the download page when you launch the app.'
+            ''
+            '---'
+          ) -join "`n"
+
+          # Prepend the prerequisite to GitHub's auto-generated changelog.
+          $notes = $prereq
+          try {
+            $gen = gh api "repos/${{ github.repository }}/releases/generate-notes" `
+              -f tag_name="$tag" -f target_commitish='${{ github.sha }}' | ConvertFrom-Json
+            $notes = "$prereq`n`n$($gen.body)"
+          } catch {
+            Write-Host "Could not generate changelog, shipping prerequisite notes only: $_"
+          }
+          $notes | Set-Content release-notes.md -Encoding utf8
+
+          $args = @(
+            $tag
+            'Balatron/bin/publish/Balatron.exe'
+            '--title';      "Balatron $tag"
+            '--target';     '${{ github.sha }}'
+            '--notes-file'; 'release-notes.md'
+          )
+          if ('${{ steps.version.outputs.prerelease }}' -eq 'True') { $args += '--prerelease' }
+          gh release create @args
