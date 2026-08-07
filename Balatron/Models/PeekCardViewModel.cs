@@ -28,6 +28,11 @@ namespace Balatron.Models
         /// <summary>1x art, for the compact card (71x95 box).</summary>
         public IReadOnlyList<ImageSource> MiniSpriteLayers { get; private init; }
         public bool HasMiniSprite => MiniSpriteLayers is { Count: > 0 };
+
+        // Seals are drawn outside the edition-shaded art so the shader can't
+        // recolour them into invisibility.
+        public ImageSource SealSprite { get; private init; }
+        public ImageSource MiniSealSprite { get; private init; }
         /// <summary>True when this card has a predictable random outcome worth hovering for.</summary>
         public bool HasOutcome { get; private init; }
         /// <summary>Drawn crossed out — this card gets destroyed by the effect.</summary>
@@ -385,16 +390,14 @@ namespace Balatron.Models
             if (card.Enhancement != null && BalatroItems.EnhancementsByName.TryGetValue(card.Enhancement, out var enhDef))
                 enhancementKey = enhDef.Key;
 
-            // Enhancement/base art, then the seal stamp, then the rank+suit
-            // pips on top. Stone cards show no face.
+            // Enhancement/base art then the rank+suit pips; the seal is kept
+            // out so it can be layered above the shader. Stone cards show no face.
             var isStone = enhancementKey == "m_stone";
             List<ImageSource> BuildLayers(int scale)
             {
                 var built = new List<ImageSource>();
                 var baseLayer = CardSpriteService.GetPlayingCardBase(enhancementKey, scale);
                 if (baseLayer != null) built.Add(baseLayer);
-                var sealLayer = CardSpriteService.GetSealSprite(card.Seal, scale);
-                if (sealLayer != null) built.Add(sealLayer);
                 if (!isStone)
                 {
                     var faceLayer = CardSpriteService.GetPlayingCardFace(card.CenterKey, scale);
@@ -433,6 +436,8 @@ namespace Balatron.Models
                 Tooltip = tooltip,
                 SpriteLayers = layers.Count > 0 ? layers : null,
                 MiniSpriteLayers = miniLayers.Count > 0 ? miniLayers : null,
+                SealSprite = CardSpriteService.GetSealSprite(card.Seal, 2),
+                MiniSealSprite = CardSpriteService.GetSealSprite(card.Seal, 1),
                 FaceText = $"{rank}{glyph}",
                 OverlayText = overlay,
                 OverlayForeground = isRed ? RedSuit : DarkText,

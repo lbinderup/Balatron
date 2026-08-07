@@ -89,9 +89,8 @@
                                     ToolTipService.InitialShowDelay="200"
                                     ToolTipService.ShowDuration="30000">
                                 <StackPanel>
-                                    <Grid views:PixelArt.Scale="2"
-                                          Margin="0,0,0,4"
-                                          effects:EditionShader.Edition="{Binding SelectedEdition}">
+                                    <Grid views:PixelArt.Scale="2" Margin="0,0,0,4">
+                                    <Grid effects:EditionShader.Edition="{Binding SelectedEdition}">
                                         <ItemsControl ItemsSource="{Binding SpriteLayers}">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
@@ -107,7 +106,10 @@
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                     </Grid>
-                                    <TextBlock Text="{Binding Label}"
+                                    <Image Source="{Binding SealSprite}"
+                                           Stretch="Uniform"
+                                           RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                    </Grid>                                    <TextBlock Text="{Binding Label}"
                                                FontSize="16"
                                                TextWrapping="Wrap"
                                                TextAlignment="Center" />

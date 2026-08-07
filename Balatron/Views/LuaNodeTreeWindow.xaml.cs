@@ -420,10 +420,12 @@ namespace Balatron.Views
                 var baseLayer = CardSpriteService.GetPlayingCardBase(center);
                 if (baseLayer != null)
                     layers.Add(baseLayer);
-                var sealLayer = CardSpriteService.GetSealSprite(seal != null ? $"{seal} Seal" : null);
-                if (sealLayer != null)
-                    layers.Add(sealLayer);
+                var face = CardSpriteService.GetPlayingCardFace(playingCardKey);
+                if (face != null && center != "m_stone")
+                    layers.Add(face);
                 joker.SetSpriteLayers(layers);
+                // Kept separate so it renders above the edition shader.
+                joker.SealSprite = CardSpriteService.GetSealSprite(seal != null ? $"{seal} Seal" : null);
 
                 var suitChar = playingCardKey.Length > 0 ? playingCardKey[0] : '?';
                 var rank = playingCardKey.Length > 2 ? playingCardKey.Substring(2) : "?";
@@ -432,7 +434,8 @@ namespace Balatron.Views
 
                 joker.TypeLabel = "Playing Card";
                 joker.Accent = PeekCardViewModel.SetAccent("Playing Card");
-                joker.OverlayText = center == "m_stone" ? null : $"{rank}{glyph}";
+                // The face sprite carries the pips; text is only a fallback.
+                joker.OverlayText = center == "m_stone" || face != null ? null : $"{rank}{glyph}";
                 joker.OverlayForeground = PeekCardViewModel.SuitForeground(suitChar is 'H' or 'D');
 
                 var body = new List<string>();

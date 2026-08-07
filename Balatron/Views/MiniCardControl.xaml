@@ -48,7 +48,9 @@
                     </Style>
                 </TextBlock.Style>
             </TextBlock>
-            <Grid x:Name="ArtGrid" views:PixelArt.Scale="1">
+        <!-- Seal and the destroyed cross sit outside ArtGrid, above the shader -->
+        <Grid views:PixelArt.Scale="1">
+            <Grid x:Name="ArtGrid">
                 <ItemsControl ItemsSource="{Binding MiniSpriteLayers}">
                     <ItemsControl.Style>
                         <Style TargetType="ItemsControl">
@@ -97,6 +99,10 @@
                            FontWeight="Bold"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center" />
+                </Grid>
+                <Image Source="{Binding MiniSealSprite}"
+                       Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="NearestNeighbor" />
                 <!-- Destroyed cards get crossed out -->
                 <Path Stroke="#E84C3D"
                       StrokeThickness="5"

@@ -12,7 +12,9 @@
             Margin="4"
             views:HoverPopup.Content="{Binding Tooltip}">
         <StackPanel>
-            <Grid x:Name="ArtGrid" views:PixelArt.Scale="2" Margin="0,0,0,4">
+        <!-- The seal sits outside ArtGrid so the edition shader can't tint it away -->
+        <Grid views:PixelArt.Scale="2" Margin="0,0,0,4">
+            <Grid x:Name="ArtGrid">
                 <ItemsControl ItemsSource="{Binding SpriteLayers}">
                     <ItemsControl.Style>
                         <Style TargetType="ItemsControl">
@@ -75,6 +77,10 @@
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
+                </Grid>
+                <Image Source="{Binding SealSprite}"
+                       Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="NearestNeighbor" />
             </Grid>
             <TextBlock Text="{Binding Name}"
                        FontSize="14"

@@ -359,6 +359,14 @@ namespace Balatron.Models
             set { _overlayForeground = value; OnPropertyChanged(nameof(OverlayForeground)); }
         }
 
+        /// <summary>Drawn above the edition shader so it stays visible.</summary>
+        private ImageSource _sealSprite;
+        public ImageSource SealSprite
+        {
+            get => _sealSprite;
+            set { _sealSprite = value; OnPropertyChanged(nameof(SealSprite)); }
+        }
+
         private Brush _accent;
         public Brush Accent
         {
