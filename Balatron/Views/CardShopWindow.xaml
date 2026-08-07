@@ -1,0 +1,156 @@
+<Window x:Class="Balatron.Views.CardShopWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:Balatron.Models"
+        xmlns:effects="clr-namespace:Balatron.Effects"
+        xmlns:views="clr-namespace:Balatron.Views"
+        Title="Card Shop"
+        Height="500"
+        UseLayoutRounding="True"
+        SizeToContent="Width"
+        MinWidth="280"
+        MaxWidth="1400"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="CanResizeWithGrip">
+    <Window.Icon>
+        <BitmapImage UriSource="pack://application:,,,/Balatron;component/Resources/app_icon.ico" />
+    </Window.Icon>
+    <Border Margin="12"
+            Background="{StaticResource BalatroDark}"
+            BorderBrush="{StaticResource BalatroShadow}"
+            BorderThickness="3"
+            CornerRadius="18">
+        <Grid TextElement.Foreground="{StaticResource BalatroWhite}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Border Background="{StaticResource BalatroPanel}"
+                    CornerRadius="15,15,0,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Card Shop"
+                               VerticalAlignment="Center"
+                               FontSize="18"
+                               Margin="16,0,24,0" />
+                    <Button Grid.Column="1"
+                            Content="—" Padding="0"
+                            Width="36"
+                            Height="28"
+                            Margin="0,8,8,8"
+                            Background="{StaticResource BalatroBlue}"
+                            Click="MinimizeButton_Click" />
+                    <Button Grid.Column="2"
+                            Content="X" Padding="0"
+                            Width="36"
+                            Height="28"
+                            Margin="0,8,12,8"
+                            Background="{StaticResource BalatroRed}"
+                            Click="CloseButton_Click" />
+                </Grid>
+            </Border>
+            <Grid Grid.Row="1">
+                <TextBlock x:Name="EmptyText"
+                           Text="No cards in the shop."
+                           FontSize="14"
+                           Foreground="#B8B6C1"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Visibility="Collapsed" />
+                <ScrollViewer Margin="12"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding ShopCards}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:JokerViewModel}">
+                                <Border BorderBrush="{Binding Accent}"
+                                        BorderThickness="2"
+                                        Background="{StaticResource BalatroPanel}"
+                                        Padding="8"
+                                        Margin="5"
+                                        CornerRadius="10"
+                                        Width="176"
+                                        VerticalAlignment="Top"
+                                        ToolTip="{Binding CardTooltip}"
+                                        ToolTipService.InitialShowDelay="200"
+                                        ToolTipService.ShowDuration="30000">
+                                    <StackPanel>
+                                        <Grid views:PixelArt.Scale="2"
+                                              Margin="0,0,0,4"
+                                              effects:EditionShader.Edition="{Binding SelectedEdition}">
+                                            <ItemsControl ItemsSource="{Binding SpriteLayers}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <Grid />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Image Source="{Binding}"
+                                                               Stretch="Uniform"
+                                                               RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <TextBlock Text="{Binding OverlayText}"
+                                                       Foreground="{Binding OverlayForeground}"
+                                                       FontSize="26"
+                                                       FontWeight="Bold"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+                                        <TextBlock Text="{Binding Label}"
+                                                   FontSize="16"
+                                                   TextWrapping="Wrap"
+                                                   TextAlignment="Center" />
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBlock Text="{Binding TypeLabel}"
+                                                       FontSize="14"
+                                                       Foreground="{Binding Accent}" />
+                                            <TextBlock Text=" · "
+                                                       FontSize="14"
+                                                       Foreground="#B8B6C1" />
+                                            <TextBlock Text="{Binding Cost, StringFormat=${0}}"
+                                                       FontSize="14"
+                                                       Foreground="#B8B6C1" />
+                                        </StackPanel>
+                                        <Grid Margin="0,6,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button Content="Import"
+                                                    FontSize="14"
+                                                    Padding="6,3"
+                                                    Margin="0,0,2,0"
+                                                    Command="{Binding ExchangeCommand}" />
+                                            <Button Grid.Column="1"
+                                                    Content="Export"
+                                                    FontSize="14"
+                                                    Padding="6,3"
+                                                    Margin="2,0,0,0"
+                                                    Background="{StaticResource BalatroGreen}"
+                                                    Command="{Binding ExportCommand}" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

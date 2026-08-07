@@ -200,8 +200,8 @@ namespace Balatron.Views
                 Owner = this
             };
 
-            var mousePosition = Mouse.GetPosition(Application.Current.MainWindow);
-            var windowPosition = Application.Current.MainWindow.PointToScreen(mousePosition);
+            var mousePosition = Mouse.GetPosition(this);
+            var windowPosition = PointToScreen(mousePosition);
             modifyWindow.WindowStartupLocation = WindowStartupLocation.Manual;
             modifyWindow.Left = windowPosition.X;
             modifyWindow.Top = windowPosition.Y;
@@ -237,8 +237,8 @@ namespace Balatron.Views
                 Owner = this
             };
 
-            var mousePosition = Mouse.GetPosition(Application.Current.MainWindow);
-            var windowPosition = Application.Current.MainWindow.PointToScreen(mousePosition);
+            var mousePosition = Mouse.GetPosition(this);
+            var windowPosition = PointToScreen(mousePosition);
             modifyWindow.WindowStartupLocation = WindowStartupLocation.Manual;
             modifyWindow.Left = windowPosition.X;
             modifyWindow.Top = windowPosition.Y;

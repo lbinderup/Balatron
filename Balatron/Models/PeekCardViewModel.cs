@@ -35,6 +35,36 @@ namespace Balatron.Models
             return brush;
         }
 
+        /// <summary>Shared rarity accent brushes (1 common … 4 legendary).</summary>
+        public static Brush RarityAccent(int rarity) => rarity switch
+        {
+            2 => UncommonBrush,
+            3 => RareBrush,
+            4 => LegendaryBrush,
+            _ => CommonBrush
+        };
+
+        /// <summary>Accent for a non-joker card set ("Tarot", "Planet", "Spectral", "Voucher", playing card).</summary>
+        public static Brush SetAccent(string set) => set switch
+        {
+            "Tarot" => TarotBrush,
+            "Planet" => PlanetBrush,
+            "Spectral" => SpectralBrush,
+            "Voucher" => VoucherBrush,
+            "Playing Card" => CardFaceBrush,
+            _ => PanelBrush
+        };
+
+        public static Brush SuitForeground(bool isRed) => isRed ? RedSuit : DarkText;
+
+        public static string RarityDisplayName(int rarity) => rarity switch
+        {
+            2 => "Uncommon",
+            3 => "Rare",
+            4 => "Legendary",
+            _ => "Common"
+        };
+
         private static readonly Brush CommonBrush = Freeze("#2D6BFF");
         private static readonly Brush UncommonBrush = Freeze("#32C24D");
         private static readonly Brush RareBrush = Freeze("#E84C3D");

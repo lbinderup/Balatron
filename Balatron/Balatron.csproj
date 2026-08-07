@@ -19,6 +19,10 @@
     <Resource Include="Resources\\boosters_art.png" />
     <Resource Include="Resources\\vouchers_art.png" />
     <Resource Include="Resources\\m6x11plus.ttf" />
+    <Resource Include="Shaders\\foil.ps" />
+    <Resource Include="Shaders\\holo.ps" />
+    <Resource Include="Shaders\\polychrome.ps" />
+    <Resource Include="Shaders\\negative.ps" />
   </ItemGroup>
 
 </Project>

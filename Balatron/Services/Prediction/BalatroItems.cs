@@ -385,6 +385,9 @@ namespace Balatron.Services.Prediction
         public static readonly IReadOnlyDictionary<string, ConsumableDef> EnhancementsByName =
             Enhancements.ToDictionary(e => e.Name, e => e, StringComparer.OrdinalIgnoreCase);
 
+        public static readonly IReadOnlyDictionary<string, ConsumableDef> EnhancementsByKey =
+            Enhancements.ToDictionary(e => e.Key, e => e, StringComparer.Ordinal);
+
         private static VoucherDef V(string key, string name, string text) => new(key, name, text);
 
         public static readonly IReadOnlyList<VoucherDef> Vouchers = new[]

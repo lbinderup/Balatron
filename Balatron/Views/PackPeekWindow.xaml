@@ -4,7 +4,8 @@
         xmlns:views="clr-namespace:Balatron.Views"
         Title="Pack Peek"
         SizeToContent="WidthAndHeight"
-        MaxWidth="760"
+        MaxWidth="820"
+        UseLayoutRounding="True"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -67,7 +68,7 @@
                                     MouseLeave="PackHeader_MouseLeave">
                                 <StackPanel Width="130">
                                     <Image Source="{Binding Sprite}"
-                                           Height="72"
+                                           views:PixelArt.Scale="1"
                                            Stretch="Uniform"
                                            RenderOptions.BitmapScalingMode="NearestNeighbor" />
                                     <TextBlock Text="{Binding Name}"
@@ -88,7 +89,7 @@
                 <ItemsControl x:Name="CardsList">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" MaxWidth="700" />
+                            <WrapPanel Orientation="Horizontal" MaxWidth="760" />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>

@@ -1,12 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using Balatron.Models;
 using Balatron.Services;
+using Balatron.Services.Prediction;
 
 namespace Balatron.Views
 {
@@ -96,14 +99,14 @@ namespace Balatron.Views
                 return;
 
             var modifyWindow = new ModifyValuePopup(GetAddress(_selectedNode), _selectedNode.Value);
-    
-            var mousePosition = Mouse.GetPosition(Application.Current.MainWindow);
-            var windowPosition = Application.Current.MainWindow.PointToScreen(mousePosition);
-    
+
+            var mousePosition = Mouse.GetPosition(this);
+            var windowPosition = PointToScreen(mousePosition);
+
             modifyWindow.WindowStartupLocation = WindowStartupLocation.Manual;
             modifyWindow.Left = windowPosition.X;
             modifyWindow.Top = windowPosition.Y;
-    
+
             if (modifyWindow.ShowDialog() != true)
                 return;
 
@@ -111,10 +114,7 @@ namespace Balatron.Views
             var newLuaText = LuaSerializer.Serialize(_rootNode);
             File.WriteAllText(_tempFilePath, newLuaText, Encoding.ASCII);
 
-            if (Application.Current.MainWindow is MainWindow mainWindow)
-            {
-                mainWindow.RePopulateTextEditor();
-            }
+            SavegameEditorWindow.Current?.RePopulateTextEditor();
         }
 
         public string GetValueByAddress(string address)
@@ -175,23 +175,24 @@ namespace Balatron.Views
             return jokers;
         }
 
-        public ObservableCollection<JokerViewModel> GetShopJokerViewModels(
+        /// <summary>Every card in the shop's card slots — jokers, consumables and playing cards.</summary>
+        public ObservableCollection<JokerViewModel> GetShopCardViewModels(
             Action<JokerViewModel> importAction,
             Action<JokerViewModel> exportAction)
         {
-            var shopJokers = new ObservableCollection<JokerViewModel>();
+            var shopCards = new ObservableCollection<JokerViewModel>();
 
             var cardsNode = GetCardsNode("shop_jokers");
-            if (cardsNode == null) return shopJokers;
+            if (cardsNode == null) return shopCards;
 
-            foreach (var card in cardsNode.Children)
+            foreach (var card in cardsNode.Children.OrderBy(c => int.TryParse(c.Key, out var i) ? i : int.MaxValue))
             {
-                var slotIndex = int.TryParse(card.Key, out var keyIndex) ? keyIndex : shopJokers.Count + 1;
+                var slotIndex = int.TryParse(card.Key, out var keyIndex) ? keyIndex : shopCards.Count + 1;
                 var joker = CreateJokerViewModel(card, slotIndex, importAction, exportAction, null, null, null, null, null, null);
-                shopJokers.Add(joker);
+                shopCards.Add(joker);
             }
 
-            return shopJokers;
+            return shopCards;
         }
 
         public void ReplaceJoker(LuaNode originalJoker, LuaNode newJoker)
@@ -216,10 +217,7 @@ namespace Balatron.Views
             var newLuaText = LuaSerializer.Serialize(_rootNode);
             File.WriteAllText(_tempFilePath, newLuaText, Encoding.ASCII);
 
-            if (Application.Current.MainWindow is MainWindow mainWindow)
-            {
-                mainWindow.RePopulateTextEditor();
-            }
+            SavegameEditorWindow.Current?.RePopulateTextEditor();
         }
 
         public void RefreshJokerMetadata(JokerViewModel joker)
@@ -353,7 +351,104 @@ namespace Balatron.Views
             joker.BaseCost = baseCostNode != null && int.TryParse(baseCostNode.Value, out int bc) ? bc : 0;
             joker.ExtraCost = extraCostNode != null && int.TryParse(extraCostNode.Value, out int ec) ? ec : 0;
             joker.SetSelectedEditionSilently(GetEditionType(cardNode));
-            joker.SetSpriteLayers(JokerSpriteService.GetSpriteLayers(joker.CenterKey));
+
+            ApplyCardPresentation(cardNode, joker);
+        }
+
+        /// <summary>
+        /// Art, type label, accent and tooltip for any card that can sit in a
+        /// card area: jokers, consumables, playing cards and vouchers.
+        /// </summary>
+        private static void ApplyCardPresentation(LuaNode cardNode, JokerViewModel joker)
+        {
+            var saveFields = cardNode.Children.FirstOrDefault(n => n.Key == "save_fields");
+            var playingCardKey = saveFields?.Children.FirstOrDefault(n => n.Key == "card")?.Value?.Trim('"');
+            var center = joker.CenterKey ?? string.Empty;
+            var seal = cardNode.Children.FirstOrDefault(n => n.Key == "seal")?.Value?.Trim('"');
+
+            joker.OverlayText = null;
+
+            // Playing cards are identified by their card key; their "center" is
+            // the enhancement (c_base when unenhanced).
+            if (!string.IsNullOrEmpty(playingCardKey))
+            {
+                var layers = new List<ImageSource>();
+                var baseLayer = CardSpriteService.GetPlayingCardBase(center);
+                if (baseLayer != null)
+                    layers.Add(baseLayer);
+                var sealLayer = CardSpriteService.GetSealSprite(seal != null ? $"{seal} Seal" : null);
+                if (sealLayer != null)
+                    layers.Add(sealLayer);
+                joker.SetSpriteLayers(layers);
+
+                var suitChar = playingCardKey.Length > 0 ? playingCardKey[0] : '?';
+                var rank = playingCardKey.Length > 2 ? playingCardKey.Substring(2) : "?";
+                if (rank == "T") rank = "10";
+                var glyph = suitChar switch { 'H' => "♥", 'D' => "♦", 'C' => "♣", 'S' => "♠", _ => "?" };
+
+                joker.TypeLabel = "Playing Card";
+                joker.Accent = PeekCardViewModel.SetAccent("Playing Card");
+                joker.OverlayText = center == "m_stone" ? null : $"{rank}{glyph}";
+                joker.OverlayForeground = PeekCardViewModel.SuitForeground(suitChar is 'H' or 'D');
+
+                var body = new List<string>();
+                if (BalatroItems.EnhancementsByKey.TryGetValue(center, out var enh))
+                    body.Add($"{enh.Name}: {enh.Text}");
+                if (seal != null) body.Add($"{seal} Seal");
+                joker.CardTooltip = new PeekTooltipViewModel
+                {
+                    Title = BalatroItems.CardDisplayName(playingCardKey),
+                    Subtitle = "Playing Card",
+                    Body = body.Count > 0 ? string.Join("\n", body) : null
+                };
+                return;
+            }
+
+            if (BalatroItems.ConsumablesByKey.TryGetValue(center, out var consumable))
+            {
+                var set = BalatroItems.Tarots.Any(t => t.Key == center) ? "Tarot"
+                    : BalatroItems.Planets.Any(p => p.Key == center) ? "Planet"
+                    : "Spectral";
+                var sprite = CardSpriteService.GetConsumableSprite(center);
+                joker.SetSpriteLayers(sprite != null ? new[] { sprite } : Array.Empty<ImageSource>());
+                joker.TypeLabel = set;
+                joker.Accent = PeekCardViewModel.SetAccent(set);
+                joker.CardTooltip = new PeekTooltipViewModel
+                {
+                    Title = consumable.Name,
+                    Subtitle = set,
+                    Body = consumable.Text
+                };
+                return;
+            }
+
+            if (center.StartsWith("v_", StringComparison.Ordinal))
+            {
+                var sprite = CardSpriteService.GetVoucherSprite(center);
+                joker.SetSpriteLayers(sprite != null ? new[] { sprite } : Array.Empty<ImageSource>());
+                joker.TypeLabel = "Voucher";
+                joker.Accent = PeekCardViewModel.SetAccent("Voucher");
+                BalatroItems.VouchersByKey.TryGetValue(center, out var voucher);
+                joker.CardTooltip = new PeekTooltipViewModel
+                {
+                    Title = voucher?.Name ?? joker.Label,
+                    Subtitle = "Voucher",
+                    Body = voucher?.Text
+                };
+                return;
+            }
+
+            joker.SetSpriteLayers(JokerSpriteService.GetSpriteLayers(center));
+            BalatroItems.JokersByKey.TryGetValue(center, out var def);
+            var rarity = def?.Rarity ?? 1;
+            joker.TypeLabel = PeekCardViewModel.RarityDisplayName(rarity);
+            joker.Accent = PeekCardViewModel.RarityAccent(rarity);
+            joker.CardTooltip = new PeekTooltipViewModel
+            {
+                Title = joker.Label,
+                Subtitle = $"{joker.TypeLabel} Joker",
+                Body = def?.Text
+            };
         }
     }
 }

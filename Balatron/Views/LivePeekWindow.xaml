@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:Balatron.Views"
         Title="Live Peek"
-        Height="640"
-        Width="560"
+        Height="700"
+        Width="720"
+        UseLayoutRounding="True"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -131,10 +132,10 @@
                                                        Foreground="#B8B6C1" />
                                             <StackPanel Orientation="Horizontal">
                                                 <Image Source="{Binding Sprite}"
-                                                       Height="46"
+                                                       Height="47.5"
                                                        Margin="0,2,6,0"
                                                        Stretch="Uniform"
-                                                       RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                                       RenderOptions.BitmapScalingMode="HighQuality" />
                                                 <TextBlock Text="{Binding Name}"
                                                            FontSize="16"
                                                            TextWrapping="Wrap"
@@ -174,10 +175,10 @@
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Image Source="{Binding Sprite}"
-                                               Height="56"
+                                               Height="47.5"
                                                Margin="0,0,10,0"
                                                Stretch="Uniform"
-                                               RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                               RenderOptions.BitmapScalingMode="HighQuality" />
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Title}" FontSize="16" />
                                             <TextBlock Text="{Binding ChoiceLabel}"

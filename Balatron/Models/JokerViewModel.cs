@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows.Input;
 using System.Windows.Media;
+using Balatron.Services;
 
 namespace Balatron.Models
 {
@@ -23,6 +25,7 @@ namespace Balatron.Models
                 _isEternal = value;
                 OnPropertyChanged(nameof(IsEternal));
                 OnPropertyChanged(nameof(EternalToggleLabel));
+                ComposeLayers();
             }
         }
 
@@ -35,6 +38,7 @@ namespace Balatron.Models
                 _isRental = value;
                 OnPropertyChanged(nameof(IsRental));
                 OnPropertyChanged(nameof(RentalToggleLabel));
+                ComposeLayers();
             }
         }
 
@@ -48,6 +52,7 @@ namespace Balatron.Models
                 OnPropertyChanged(nameof(IsPerishable));
                 OnPropertyChanged(nameof(PerishableLabel));
                 OnPropertyChanged(nameof(PerishableToggleLabel));
+                ComposeLayers();
             }
         }
 
@@ -314,16 +319,58 @@ namespace Balatron.Models
             SetEditionCommand = new RelayCommand(param => SetEditionAction?.Invoke(this, param as string), _ => SetEditionAction != null);
         }
 
+        private IReadOnlyList<ImageSource> _baseLayers = Array.Empty<ImageSource>();
+
         public void SetSpriteLayers(IEnumerable<ImageSource> layers)
         {
-            SpriteLayers.Clear();
-            if (layers == null)
-                return;
+            _baseLayers = layers?.ToList() ?? (IReadOnlyList<ImageSource>)Array.Empty<ImageSource>();
+            ComposeLayers();
+        }
 
-            foreach (var layer in layers)
-            {
+        /// <summary>Card art = base joker sprite + the sticker sprites for the active flags.</summary>
+        private void ComposeLayers()
+        {
+            SpriteLayers.Clear();
+            foreach (var layer in _baseLayers)
                 SpriteLayers.Add(layer);
-            }
+            foreach (var sticker in CardSpriteService.GetStickerSprites(IsEternal, IsPerishable, IsRental))
+                SpriteLayers.Add(sticker);
+        }
+
+        /// <summary>Rarity for jokers, otherwise the card type ("Tarot", "Playing Card", …).</summary>
+        private string _typeLabel;
+        public string TypeLabel
+        {
+            get => _typeLabel;
+            set { _typeLabel = value; OnPropertyChanged(nameof(TypeLabel)); }
+        }
+
+        private string _overlayText;
+        public string OverlayText
+        {
+            get => _overlayText;
+            set { _overlayText = value; OnPropertyChanged(nameof(OverlayText)); }
+        }
+
+        private Brush _overlayForeground;
+        public Brush OverlayForeground
+        {
+            get => _overlayForeground;
+            set { _overlayForeground = value; OnPropertyChanged(nameof(OverlayForeground)); }
+        }
+
+        private Brush _accent;
+        public Brush Accent
+        {
+            get => _accent;
+            set { _accent = value; OnPropertyChanged(nameof(Accent)); }
+        }
+
+        private object _cardTooltip;
+        public object CardTooltip
+        {
+            get => _cardTooltip;
+            set { _cardTooltip = value; OnPropertyChanged(nameof(CardTooltip)); }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

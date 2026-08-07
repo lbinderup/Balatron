@@ -8,39 +8,40 @@ using Balatron.Services;
 
 namespace Balatron.Views
 {
-    public partial class ShopJokerWindow : Window
+    public partial class CardShopWindow : Window
     {
         private readonly LuaNodeTreeWindow _editor;
-        public ObservableCollection<JokerViewModel> ShopJokers { get; set; }
+        public ObservableCollection<JokerViewModel> ShopCards { get; set; }
 
-        public ShopJokerWindow(LuaNodeTreeWindow editor)
+        public CardShopWindow(LuaNodeTreeWindow editor)
         {
             InitializeComponent();
             _editor = editor;
-            ShopJokers = _editor.GetShopJokerViewModels(ImportJoker, ExportJoker);
+            ShopCards = _editor.GetShopCardViewModels(ImportCard, ExportCard);
             DataContext = this;
+            EmptyText.Visibility = ShopCards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void ExportJoker(JokerViewModel joker)
+        private void ExportCard(JokerViewModel card)
         {
             var saveFileDialog = new SaveFileDialog
             {
-                Filter = "Joker JSON (*.json)|*.json",
-                FileName = $"{LuaNodeTreeWindow.SanitizeFileName(joker.Label)}.json"
+                Filter = "Card JSON (*.json)|*.json",
+                FileName = $"{LuaNodeTreeWindow.SanitizeFileName(card.Label)}.json"
             };
 
             if (saveFileDialog.ShowDialog() == true)
             {
-                JokerFileService.ExportJoker(joker.CardNode, saveFileDialog.FileName);
-                MessageBox.Show("Joker exported successfully.", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
+                JokerFileService.ExportJoker(card.CardNode, saveFileDialog.FileName);
+                MessageBox.Show("Card exported successfully.", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
-        private void ImportJoker(JokerViewModel joker)
+        private void ImportCard(JokerViewModel card)
         {
             var openFileDialog = new OpenFileDialog
             {
-                Filter = "Joker JSON (*.json)|*.json"
+                Filter = "Card JSON (*.json)|*.json"
             };
 
             if (openFileDialog.ShowDialog() != true)
@@ -52,14 +53,14 @@ namespace Balatron.Views
             var imported = JokerFileService.ImportJoker(openFileDialog.FileName);
             if (imported == null)
             {
-                MessageBox.Show("Unable to read joker data from the selected file.", "Import Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Unable to read card data from the selected file.", "Import Failed", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            _editor.ReplaceJoker(joker.CardNode, imported);
-            joker.CardNode = imported;
-            _editor.RefreshJokerMetadata(joker);
-            MessageBox.Show("Joker imported into the shop slot.", "Import", MessageBoxButton.OK, MessageBoxImage.Information);
+            _editor.ReplaceJoker(card.CardNode, imported);
+            card.CardNode = imported;
+            _editor.RefreshJokerMetadata(card);
+            MessageBox.Show("Card imported into the shop slot.", "Import", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
