@@ -329,6 +329,34 @@ namespace Balatron.Services.Prediction
             C("c_eris", "Eris", "Levels up Flush Five"),
         };
 
+        /// <summary>Poker hand each Planet levels up.</summary>
+        public static readonly IReadOnlyDictionary<string, string> PlanetHandTypes = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["c_mercury"] = "Pair",
+            ["c_venus"] = "Three of a Kind",
+            ["c_earth"] = "Full House",
+            ["c_mars"] = "Four of a Kind",
+            ["c_jupiter"] = "Flush",
+            ["c_saturn"] = "Straight",
+            ["c_uranus"] = "Two Pair",
+            ["c_neptune"] = "Straight Flush",
+            ["c_pluto"] = "High Card",
+            ["c_planet_x"] = "Five of a Kind",
+            ["c_ceres"] = "Flush House",
+            ["c_eris"] = "Flush Five",
+        };
+
+        /// <summary>
+        /// G.handlist order — the game scans it front to back keeping the first
+        /// strict maximum, so this decides ties for "most played hand".
+        /// </summary>
+        public static readonly IReadOnlyList<string> HandList = new[]
+        {
+            "Flush Five", "Flush House", "Five of a Kind", "Straight Flush",
+            "Four of a Kind", "Full House", "Flush", "Straight",
+            "Three of a Kind", "Two Pair", "Pair", "High Card",
+        };
+
         /// <summary>Secret planets and the poker hand that must be discovered first.</summary>
         public static readonly IReadOnlyDictionary<string, string> SecretPlanetGates = new Dictionary<string, string>(StringComparer.Ordinal)
         {

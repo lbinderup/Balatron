@@ -51,7 +51,7 @@ namespace Balatron.Services.Live
     /// <summary>
     /// Everything the predictor needs, extracted from one parsed save.jkr.
     /// </summary>
-    public sealed class GameStateSnapshot
+    public sealed record GameStateSnapshot
     {
         public string SourcePath { get; init; }
         public DateTime LoadedAt { get; init; }
@@ -77,6 +77,8 @@ namespace Balatron.Services.Live
         public IReadOnlySet<string> BannedKeys { get; init; }
         public IReadOnlySet<string> PoolFlags { get; init; }
         public IReadOnlyDictionary<string, bool> HandVisible { get; init; }
+        /// <summary>Times each poker hand has been played this run (drives Telescope).</summary>
+        public IReadOnlyDictionary<string, int> HandPlayed { get; init; }
         public IReadOnlySet<string> DeckEnhancements { get; init; }
         public IReadOnlyDictionary<string, string> BlindStates { get; init; }
         public IReadOnlyDictionary<string, string> BlindTags { get; init; }
@@ -242,10 +244,14 @@ namespace Balatron.Services.Live
 
             var hands = Child(game, "hands");
             var handVisible = new Dictionary<string, bool>(StringComparer.Ordinal);
+            var handPlayed = new Dictionary<string, int>(StringComparer.Ordinal);
             if (hands != null)
             {
                 foreach (var hand in hands.Children)
+                {
                     handVisible[hand.Key] = BoolValue(Child(hand, "visible")?.Value);
+                    handPlayed[hand.Key] = (int)Number(Child(hand, "played")?.Value);
+                }
             }
 
             var modifiers = Child(game, "modifiers");
@@ -290,6 +296,7 @@ namespace Balatron.Services.Live
                 BannedKeys = KeySet(Child(game, "banned_keys")),
                 PoolFlags = KeySet(Child(game, "pool_flags")),
                 HandVisible = handVisible,
+                HandPlayed = handPlayed,
                 DeckEnhancements = deckEnhancements,
                 BlindStates = blindStates,
                 BlindTags = blindTags,

@@ -300,6 +300,38 @@ namespace Balatron.Services.Prediction
             return Card(kind, def);
         }
 
+        /// <summary>
+        /// The planet Telescope guarantees: the one for the most played visible
+        /// hand, scanning G.handlist order and keeping the first strict maximum.
+        /// Null when Telescope isn't owned or nothing has been played yet.
+        /// </summary>
+        private ConsumableDef TelescopePlanet()
+        {
+            if (!_snap.UsedVouchers.Contains("v_telescope"))
+                return null;
+
+            string best = null;
+            var tally = 0;
+            foreach (var hand in BalatroItems.HandList)
+            {
+                if (!_snap.HandVisible.TryGetValue(hand, out var visible) || !visible)
+                    continue;
+                if (!_snap.HandPlayed.TryGetValue(hand, out var played) || played <= tally)
+                    continue;
+                best = hand;
+                tally = played;
+            }
+
+            if (best == null)
+                return null;
+
+            var planetKey = BalatroItems.PlanetHandTypes
+                .FirstOrDefault(kv => kv.Value == best).Key;
+            return planetKey != null && BalatroItems.ConsumablesByKey.TryGetValue(planetKey, out var def)
+                ? def
+                : null;
+        }
+
         private bool CanForce(string key, ISet<string> exclusions, ISet<string> tempLocked) =>
             _snap.ShowmanOwned || (!exclusions.Contains(key) && !tempLocked.Contains(key));
 
@@ -379,8 +411,23 @@ namespace Balatron.Services.Prediction
                             cards.Add(WithOutcome(NextConsumable(rng, PredictedKind.Tarot, "ar1", exclusions, temp, soulable: true)));
                         break;
                     case "Celestial":
-                        cards.Add(WithOutcome(NextConsumable(rng, PredictedKind.Planet, "pl1", exclusions, temp, soulable: true)));
+                    {
+                        // Telescope forces the first card to the planet for your
+                        // most played hand. A forced key skips pool selection
+                        // entirely, so it draws no RNG — but the card still
+                        // registers as used, locking it out of the rest.
+                        var forced = i == 0 ? TelescopePlanet() : null;
+                        if (forced != null)
+                        {
+                            temp.Add(forced.Key);
+                            cards.Add(WithOutcome(Card(PredictedKind.Planet, forced, note: "Telescope")));
+                        }
+                        else
+                        {
+                            cards.Add(WithOutcome(NextConsumable(rng, PredictedKind.Planet, "pl1", exclusions, temp, soulable: true)));
+                        }
                         break;
+                    }
                     case "Spectral":
                         cards.Add(WithOutcome(NextConsumable(rng, PredictedKind.Spectral, "spe", exclusions, temp, soulable: true)));
                         break;
