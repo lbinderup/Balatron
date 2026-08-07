@@ -1,0 +1,287 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
+using Balatron.Models;
+using Balatron.Services.Live;
+using Balatron.Services.Prediction;
+
+namespace Balatron.Views
+{
+    public sealed class RerollGroupViewModel
+    {
+        public string Title { get; init; }
+        public IReadOnlyList<PeekCardViewModel> Cards { get; init; }
+    }
+
+    public sealed class PackOfferViewModel
+    {
+        public string Title { get; init; }
+        public string ChoiceLabel { get; init; }
+        public System.Windows.Media.ImageSource Sprite { get; init; }
+        public ICommand PeekCommand { get; init; }
+    }
+
+    public sealed class VoucherLineViewModel
+    {
+        public string Header { get; init; }
+        public string Name { get; init; }
+        public System.Windows.Media.ImageSource Sprite { get; init; }
+        public object Tooltip { get; init; }
+    }
+
+    public partial class LivePeekWindow : Window
+    {
+        private static LivePeekWindow _instance;
+
+        public static LivePeekWindow Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new LivePeekWindow();
+                    _instance.Closed += (s, e) => _instance = null;
+                }
+                return _instance;
+            }
+        }
+
+        private readonly SaveFileWatcherService _watcher = new();
+        private GameStateSnapshot _snapshot;
+        private IReadOnlySet<string> _profileUnlocks;
+        private int _rerollDepth = 4;
+
+        public ObservableCollection<PeekCardViewModel> ShopNow { get; } = new();
+        public ObservableCollection<PackOfferViewModel> Packs { get; } = new();
+        public ObservableCollection<RerollGroupViewModel> Rerolls { get; } = new();
+        public ObservableCollection<VoucherLineViewModel> VoucherLines { get; } = new();
+
+        private LivePeekWindow()
+        {
+            InitializeComponent();
+            ShopNowList.ItemsSource = ShopNow;
+            PacksList.ItemsSource = Packs;
+            RerollsList.ItemsSource = Rerolls;
+            VoucherLinesList.ItemsSource = VoucherLines;
+
+            _watcher.SnapshotUpdated += (snapshot, unlocks) =>
+                Dispatcher.BeginInvoke(new Action(() => ApplySnapshot(snapshot, unlocks)));
+            _watcher.StatusChanged += message =>
+                Dispatcher.BeginInvoke(new Action(() => SetStatus(message, healthy: false)));
+
+            Closed += (s, e) => _watcher.Dispose();
+            _watcher.Start();
+        }
+
+        private void ApplySnapshot(GameStateSnapshot snapshot, IReadOnlySet<string> unlocks)
+        {
+            _snapshot = snapshot;
+            _profileUnlocks = unlocks;
+
+            HeaderText.Text =
+                $"Seed {snapshot.Seed}   ·   Ante {snapshot.Ante}   ·   Round {snapshot.Round}   ·   ${snapshot.Dollars:0}   ·   {snapshot.StateName}";
+
+            var profile = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(snapshot.SourcePath));
+            SetStatus($"Watching profile {profile} ({snapshot.DeckName}) · updated {snapshot.LoadedAt:HH:mm:ss}", healthy: true);
+
+            RebuildFromSnapshot();
+        }
+
+        private void RebuildFromSnapshot()
+        {
+            if (_snapshot == null)
+                return;
+
+            var engine = new PredictionEngine(_snapshot, _profileUnlocks);
+
+            ShopNow.Clear();
+            foreach (var card in _snapshot.ShopCards)
+            {
+                string outcomeText = null;
+                System.Collections.Generic.IReadOnlyList<PredictedCard> outcomeCards = null;
+                if (card.CenterKey != null && card.CenterKey.StartsWith("c_"))
+                    engine.TryPredictOutcome(card.CenterKey, out outcomeText, out outcomeCards);
+                ShopNow.Add(PeekCardViewModel.FromShopCard(card, outcomeText, outcomeCards));
+            }
+            ShopEmptyText.Visibility = ShopNow.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+            RebuildVoucherLines(engine);
+
+            Packs.Clear();
+            var offerDefs = _snapshot.PackOffers
+                .Select(o => (Offer: o, Def: BalatroItems.PackFromCenterKey(o.CenterKey)))
+                .ToList();
+
+            foreach (var (offer, def) in offerDefs)
+            {
+                var title = offer.Label ?? def?.Name ?? offer.CenterKey;
+                var choiceLabel = def != null ? $"Choose {def.Choices} of {def.CardCount}" : string.Empty;
+                var centerKey = offer.CenterKey;
+                // Packs of the same kind pull from one shared RNG sequence, so
+                // peeking them must be presented together.
+                var sharedKind = def != null
+                    ? offerDefs.Where(x => x.Def != null && x.Def.Kind == def.Kind).ToList()
+                    : null;
+
+                Packs.Add(new PackOfferViewModel
+                {
+                    Title = title,
+                    ChoiceLabel = choiceLabel,
+                    Sprite = Services.CardSpriteService.GetPackSprite(offer.CenterKey),
+                    PeekCommand = new RelayCommand(_ =>
+                    {
+                        var peekEngine = new PredictionEngine(_snapshot, _profileUnlocks);
+                        PackPeekWindow window;
+
+                        if (sharedKind is { Count: > 1 })
+                        {
+                            var defs = sharedKind.Select(x => x.Def).ToList();
+                            var sequence = peekEngine.PredictPackSequence(defs)
+                                .SelectMany(segment => segment)
+                                .Select(PeekCardViewModel.FromPrediction)
+                                .ToList();
+
+                            var headers = sharedKind.Select((x, index) =>
+                            {
+                                // The sequence depends on opening order: the
+                                // trailing pack resamples cards the leading one
+                                // already contains.
+                                var orderedDefs = new List<PackDef> { x.Def };
+                                orderedDefs.AddRange(sharedKind.Where((_, j) => j != index).Select(y => y.Def));
+                                var whenFirst = peekEngine.PredictPackSequence(orderedDefs)
+                                    .SelectMany(segment => segment)
+                                    .Select(PeekCardViewModel.FromPrediction)
+                                    .ToList();
+
+                                return new PackHeaderViewModel
+                                {
+                                    Name = x.Offer.Label ?? x.Def.Name,
+                                    Sprite = Services.CardSpriteService.GetPackSprite(x.Offer.CenterKey),
+                                    CardCount = x.Def.CardCount,
+                                    Label = $"Choose {x.Def.Choices} of {x.Def.CardCount}",
+                                    SequenceWhenOpenedFirst = whenFirst
+                                };
+                            }).ToList();
+
+                            window = new PackPeekWindow($"{def.Kind} Packs", headers, sequence);
+                        }
+                        else
+                        {
+                            var contents = peekEngine
+                                .PredictPackContents(centerKey)
+                                .Select(PeekCardViewModel.FromPrediction)
+                                .ToList();
+                            window = new PackPeekWindow($"{title} · {choiceLabel}", contents);
+                        }
+
+                        window.Owner = this;
+                        window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                        window.Show();
+                    })
+                });
+            }
+            PacksEmptyText.Visibility = Packs.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+            var nextPacks = engine.PredictNextShopPacks();
+            NextPacksText.Text = nextPacks.Count > 0
+                ? $"Next shop's packs: {string.Join(", ", nextPacks.Select(p => p.Name))}"
+                : string.Empty;
+
+            Rerolls.Clear();
+            foreach (var reroll in engine.PredictRerolls(_rerollDepth))
+            {
+                Rerolls.Add(new RerollGroupViewModel
+                {
+                    Title = reroll.Index == 0 ? "Next reroll" : $"Reroll +{reroll.Index + 1}",
+                    Cards = reroll.Slots.Select(PeekCardViewModel.FromPrediction).ToList()
+                });
+            }
+        }
+
+        private void RebuildVoucherLines(PredictionEngine engine)
+        {
+            VoucherLines.Clear();
+
+            // The round's voucher lives in GAME.current_round.voucher, so it
+            // is known even while playing a blind.
+            var currentKey = !string.IsNullOrEmpty(_snapshot.CurrentRoundVoucher)
+                ? _snapshot.CurrentRoundVoucher
+                : _snapshot.VoucherCenter;
+            if (!string.IsNullOrEmpty(currentKey))
+                VoucherLines.Add(VoucherLine("This shop", currentKey));
+
+            var smallPending = BlindPending("Small");
+            var bigPending = BlindPending("Big");
+
+            var nextShopAnte = smallPending || bigPending ? _snapshot.Ante : _snapshot.Ante + 1;
+            var next = engine.PredictShopVoucher(nextShopAnte);
+            if (next != null)
+                VoucherLines.Add(VoucherLine("Next shop", next.Key));
+
+            var tagBlinds = new List<string>();
+            if (smallPending && _snapshot.BlindTags.TryGetValue("Small", out var smallTag) && smallTag == "tag_voucher")
+                tagBlinds.Add("Small");
+            if (bigPending && _snapshot.BlindTags.TryGetValue("Big", out var bigTag) && bigTag == "tag_voucher")
+                tagBlinds.Add("Big");
+            if (tagBlinds.Count > 0)
+            {
+                var tagVouchers = engine.PredictTagVouchers(tagBlinds.Count);
+                for (var i = 0; i < tagBlinds.Count; i++)
+                    VoucherLines.Add(VoucherLine($"Skip {tagBlinds[i]} Blind", tagVouchers[i].Key));
+            }
+
+            VoucherPanel.Visibility = VoucherLines.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private bool BlindPending(string blind) =>
+            _snapshot.BlindStates.TryGetValue(blind, out var state)
+            && state is "Upcoming" or "Current" or "Select";
+
+        private static VoucherLineViewModel VoucherLine(string header, string key)
+        {
+            BalatroItems.VouchersByKey.TryGetValue(key ?? string.Empty, out var def);
+            var name = def?.Name ?? key;
+            return new VoucherLineViewModel
+            {
+                Header = header,
+                Name = name,
+                Sprite = Services.CardSpriteService.GetVoucherSprite(key),
+                Tooltip = new PeekTooltipViewModel
+                {
+                    Title = name,
+                    Subtitle = "Voucher",
+                    Body = def?.Text
+                }
+            };
+        }
+
+        private void SetStatus(string message, bool healthy)
+        {
+            StatusText.Text = message;
+            StatusDot.Fill = healthy
+                ? (Brush)FindResource("BalatroGreen")
+                : (Brush)FindResource("BalatroRed");
+        }
+
+        private void MoreRerollsButton_Click(object sender, RoutedEventArgs e)
+        {
+            _rerollDepth += 3;
+            RebuildFromSnapshot();
+        }
+
+        private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount > 1)
+                return;
+            DragMove();
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
+        private void MinimizeButton_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+    }
+}

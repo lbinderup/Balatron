@@ -1,0 +1,115 @@
+<Window x:Class="Balatron.Views.PackPeekWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Balatron.Views"
+        Title="Pack Peek"
+        SizeToContent="WidthAndHeight"
+        MaxWidth="760"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <Border Margin="12"
+            Background="{StaticResource BalatroDark}"
+            BorderBrush="{StaticResource BalatroShadow}"
+            BorderThickness="3"
+            CornerRadius="14">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Border Background="{StaticResource BalatroPanel}"
+                    CornerRadius="11,11,0,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="TitleText"
+                               VerticalAlignment="Center"
+                               FontSize="18"
+                               Foreground="{StaticResource BalatroWhite}"
+                               Margin="14,0,0,0" />
+                    <Button Grid.Column="1"
+                            Content="X" Padding="0"
+                            Width="32"
+                            Height="24"
+                            Margin="0,6,10,6"
+                            FontSize="14"
+                            Background="{StaticResource BalatroRed}"
+                            Click="CloseButton_Click" />
+                </Grid>
+            </Border>
+            <StackPanel Grid.Row="1" Margin="12">
+                <ItemsControl x:Name="PacksHeaderList"
+                              Visibility="Collapsed"
+                              Margin="0,0,0,4"
+                              HorizontalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource BalatroPanel}"
+                                    BorderBrush="{StaticResource BalatroShadow}"
+                                    BorderThickness="2"
+                                    CornerRadius="10"
+                                    Padding="8,6"
+                                    Margin="4"
+                                    Cursor="Hand"
+                                    MouseEnter="PackHeader_MouseEnter"
+                                    MouseLeave="PackHeader_MouseLeave">
+                                <StackPanel Width="130">
+                                    <Image Source="{Binding Sprite}"
+                                           Height="72"
+                                           Stretch="Uniform"
+                                           RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                    <TextBlock Text="{Binding Name}"
+                                               FontSize="14"
+                                               TextWrapping="Wrap"
+                                               TextAlignment="Center"
+                                               Foreground="{StaticResource BalatroWhite}"
+                                               Margin="0,4,0,0" />
+                                    <TextBlock Text="{Binding Label}"
+                                               FontSize="14"
+                                               TextAlignment="Center"
+                                               Foreground="#B8B6C1" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <ItemsControl x:Name="CardsList">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" MaxWidth="700" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border>
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Opacity" Value="1" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Dimmed}" Value="True">
+                                                <Setter Property="Opacity" Value="0.25" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <views:PeekCardControl DataContext="{Binding Card}" />
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

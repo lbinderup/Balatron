@@ -38,7 +38,7 @@
                      Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
                      Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                      BorderBrush="{DynamicResource {x:Static SystemColors.InactiveBorderBrushKey}}" />
-            <Button Name="ModifyValueButton" Content="Modify Value" Height="30"
+            <Button Name="ModifyValueButton" Content="Modify Value" Height="30" Padding="14,0"
                     Click="ModifyValueButton_Click" IsEnabled="False" />
         </StackPanel>
     </Grid>

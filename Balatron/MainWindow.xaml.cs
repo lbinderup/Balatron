@@ -98,6 +98,13 @@ namespace Balatron
             }
         }
 
+        private void LivePeekButton_Click(object sender, RoutedEventArgs e)
+        {
+            var window = Views.LivePeekWindow.Instance;
+            window.Show();
+            window.Activate();
+        }
+
         private void LuaNodeTreeViewerButton_Click(object sender, RoutedEventArgs e)
         {
             var editor = Views.LuaNodeTreeWindow.Instance;

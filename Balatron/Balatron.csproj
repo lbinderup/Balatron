@@ -13,6 +13,11 @@
     <None Include="Resources\joker_art.png" />
     <Resource Include="Resources\\app_icon.ico" />
     <Resource Include="Resources\\joker_art.png" />
+    <Resource Include="Resources\\tarots_art.png" />
+    <Resource Include="Resources\\enhancers_art.png" />
+    <Resource Include="Resources\\stickers_art.png" />
+    <Resource Include="Resources\\boosters_art.png" />
+    <Resource Include="Resources\\vouchers_art.png" />
     <Resource Include="Resources\\m6x11plus.ttf" />
   </ItemGroup>
 
