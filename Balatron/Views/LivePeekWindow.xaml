@@ -84,6 +84,28 @@
                           Margin="12,8,12,12"
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel>
+                    <TextBlock Text="Your jokers &amp; consumables"
+                               FontSize="18"
+                               Margin="4,6,0,2"
+                               Foreground="#FFD966" />
+                    <TextBlock x:Name="OwnedEmptyText"
+                               FontSize="14"
+                               Foreground="#B8B6C1"
+                               Margin="4,0,0,4"
+                               Text="Nothing owned yet." />
+                    <ItemsControl x:Name="OwnedList" Margin="0,0,0,4">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <views:MiniCardControl />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
                     <TextBlock Text="Shop right now"
                                FontSize="18"
                                Margin="4,6,0,2"

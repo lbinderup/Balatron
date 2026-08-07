@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Balatron.Services.Live;
 using Balatron.Services.Rng;
+using LuaRandomGen = Balatron.Services.Rng.LuaRandom;
 
 namespace Balatron.Services.Prediction
 {
@@ -472,6 +473,47 @@ namespace Balatron.Services.Prediction
                 case "c_wheel_of_fortune":
                     return TryPredictWheelOfFortune(out text, out cards);
 
+                case "c_ectoplasm":
+                    return TryPredictJokerEdition("ectoplasm", "Negative", EditionlessJokers(), out text, out cards);
+
+                case "c_hex":
+                    return TryPredictJokerEdition("hex", "Polychrome", EditionlessJokers(), out text, out cards);
+
+                case "c_ankh":
+                {
+                    // Ankh picks from every joker, including Eternal ones.
+                    var pool = JokersBySortId(_snap.OwnedJokers);
+                    if (pool.Count == 0)
+                    {
+                        text = "No Jokers to copy";
+                        return true;
+                    }
+                    var chosen = pool[FreshRng().ChooseIndex("ankh_choice", pool.Count)];
+                    cards = new[] { OwnedJokerCard(chosen) };
+                    text = "Copied (all others destroyed)";
+                    return true;
+                }
+
+                case "c_aura":
+                {
+                    // poll_edition('aura', guaranteed, no negative)
+                    var poll = FreshRng().Random("aura");
+                    text = poll > 0.85 ? "Polychrome" : poll > 0.5 ? "Holographic" : "Foil";
+                    return true;
+                }
+
+                case "c_familiar":
+                    return TryPredictHandConjure("Familiar", 3, out text, out cards);
+
+                case "c_grim":
+                    return TryPredictHandConjure("Grim", 2, out text, out cards);
+
+                case "c_incantation":
+                    return TryPredictHandConjure("Incantation", 4, out text, out cards);
+
+                case "c_immolate":
+                    return TryPredictImmolate(out text, out cards);
+
                 case "c_sigil":
                 {
                     var suits = new[] { "Spades", "Hearts", "Diamonds", "Clubs" };
@@ -517,6 +559,310 @@ namespace Balatron.Services.Prediction
             for (var i = 0; i < count; i++)
                 cards.Add(NextConsumable(rng, kind, source, exclusions, temp, soulable: false));
             return cards;
+        }
+
+        // Every "random card/joker" pick runs through pseudorandom_element,
+        // which sorts candidates by sort_id before indexing — so these are
+        // reproducible from the save regardless of on-screen order.
+        private static List<OwnedJokerInfo> JokersBySortId(IEnumerable<OwnedJokerInfo> jokers) =>
+            jokers.OrderBy(j => j.SortId).ToList();
+
+        private List<OwnedJokerInfo> EditionlessJokers() =>
+            JokersBySortId(_snap.OwnedJokers.Where(j => !j.HasEdition));
+
+        private List<HandCardInfo> HandBySortId() =>
+            _snap.HandCards.OrderBy(c => c.SortId).ToList();
+
+        private static PredictedCard OwnedJokerCard(OwnedJokerInfo joker, string edition = null)
+        {
+            BalatroItems.JokersByKey.TryGetValue(joker.CenterKey ?? string.Empty, out var def);
+            return new PredictedCard
+            {
+                Kind = PredictedKind.Joker,
+                CenterKey = joker.CenterKey,
+                Name = joker.Label ?? def?.Name ?? joker.CenterKey,
+                Text = def?.Text,
+                Rarity = def?.Rarity ?? 1,
+                Edition = edition ?? (joker.HasEdition ? joker.Edition : null)
+            };
+        }
+
+        private static PredictedCard HandCard(HandCardInfo card)
+        {
+            string enhancement = null;
+            if (card.EnhancementKey != null
+                && BalatroItems.EnhancementsByKey.TryGetValue(card.EnhancementKey, out var enh))
+                enhancement = enh.Name;
+
+            return new PredictedCard
+            {
+                Kind = PredictedKind.PlayingCard,
+                CenterKey = card.CardKey,
+                Name = BalatroItems.CardDisplayName(card.CardKey),
+                Enhancement = enhancement,
+                Seal = card.Seal != null ? $"{card.Seal} Seal" : null
+            };
+        }
+
+        private bool TryPredictJokerEdition(string key, string edition, List<OwnedJokerInfo> pool,
+            out string text, out IReadOnlyList<PredictedCard> cards)
+        {
+            text = null;
+            cards = null;
+
+            if (pool.Count == 0)
+            {
+                text = "No Jokers without an edition";
+                return true;
+            }
+
+            var chosen = pool[FreshRng().ChooseIndex(key, pool.Count)];
+            cards = new[] { OwnedJokerCard(chosen, edition) };
+            return true;
+        }
+
+        /// <summary>Familiar / Grim / Incantation: destroy one card in hand, conjure enhanced ones.</summary>
+        private bool TryPredictHandConjure(string effect, int count, out string text,
+            out IReadOnlyList<PredictedCard> cards)
+        {
+            text = null;
+            cards = null;
+
+            var hand = HandBySortId();
+            if (hand.Count == 0)
+            {
+                text = "Needs cards in hand";
+                return true;
+            }
+
+            var rng = FreshRng();
+            var destroyed = hand[rng.ChooseIndex("random_destroy", hand.Count)];
+
+            var suits = new[] { "S", "H", "D", "C" };
+            // The Enhanced pool in game order, minus Stone.
+            var enhancements = BalatroItems.Enhancements.Where(e => e.Key != "m_stone").ToList();
+
+            var created = new List<PredictedCard>();
+            for (var i = 0; i < count; i++)
+            {
+                string rank;
+                string suit;
+                switch (effect)
+                {
+                    case "Familiar":
+                    {
+                        var faces = new[] { "J", "Q", "K" };
+                        rank = faces[rng.ChooseIndex("familiar_create", faces.Length)];
+                        suit = suits[rng.ChooseIndex("familiar_create", suits.Length)];
+                        break;
+                    }
+                    case "Grim":
+                        rank = "A";
+                        suit = suits[rng.ChooseIndex("grim_create", suits.Length)];
+                        break;
+                    default:
+                    {
+                        var numbers = new[] { "2", "3", "4", "5", "6", "7", "8", "9", "T" };
+                        rank = numbers[rng.ChooseIndex("incantation_create", numbers.Length)];
+                        suit = suits[rng.ChooseIndex("incantation_create", suits.Length)];
+                        break;
+                    }
+                }
+
+                var enhancement = enhancements[rng.ChooseIndex("spe_card", enhancements.Count)];
+                var cardKey = $"{suit}_{rank}";
+                created.Add(new PredictedCard
+                {
+                    Kind = PredictedKind.PlayingCard,
+                    CenterKey = cardKey,
+                    Name = BalatroItems.CardDisplayName(cardKey),
+                    Enhancement = enhancement.Name
+                });
+            }
+
+            cards = created;
+            text = $"Destroys {BalatroItems.CardDisplayName(destroyed.CardKey)}, creates:";
+            return true;
+        }
+
+        private bool TryPredictImmolate(out string text, out IReadOnlyList<PredictedCard> cards)
+        {
+            text = null;
+            cards = null;
+
+            var hand = HandBySortId();
+            if (hand.Count == 0)
+            {
+                text = "Needs cards in hand";
+                return true;
+            }
+
+            // pseudoshuffle: sort by sort_id, then seeded Fisher-Yates.
+            var shuffled = hand.ToList();
+            var rng = FreshRng().Generator("immolate");
+            for (var i = shuffled.Count; i >= 2; i--)
+            {
+                var j = rng.NextInt(1, i);
+                (shuffled[i - 1], shuffled[j - 1]) = (shuffled[j - 1], shuffled[i - 1]);
+            }
+
+            cards = shuffled.Take(5).Select(HandCard).ToList();
+            text = "Destroys:";
+            return true;
+        }
+
+        /// <summary>
+        /// What an owned joker would do the next time its random effect fires.
+        /// </summary>
+        public bool TryPredictJokerOutcome(string centerKey, out string text, out IReadOnlyList<PredictedCard> cards)
+        {
+            text = null;
+            cards = null;
+
+            switch (centerKey)
+            {
+                case "j_perkeo":
+                {
+                    var pool = _snap.OwnedConsumables.OrderBy(c => c.SortId).ToList();
+                    if (pool.Count == 0)
+                    {
+                        text = "No consumables to copy";
+                        return true;
+                    }
+                    var chosen = pool[FreshRng().ChooseIndex("perkeo", pool.Count)];
+                    BalatroItems.ConsumablesByKey.TryGetValue(chosen.CenterKey ?? string.Empty, out var def);
+                    cards = new[]
+                    {
+                        new PredictedCard
+                        {
+                            Kind = KindOfConsumable(chosen.CenterKey),
+                            CenterKey = chosen.CenterKey,
+                            Name = def?.Name ?? chosen.Label,
+                            Text = def?.Text,
+                            Edition = "Negative"
+                        }
+                    };
+                    text = "On leaving the shop:";
+                    return true;
+                }
+
+                case "j_invisible":
+                {
+                    var pool = JokersBySortId(_snap.OwnedJokers.Where(j => j.CenterKey != "j_invisible"));
+                    if (pool.Count == 0)
+                    {
+                        text = "No other Jokers to duplicate";
+                        return true;
+                    }
+                    var chosen = pool[FreshRng().ChooseIndex("invisible", pool.Count)];
+                    cards = new[] { OwnedJokerCard(chosen) };
+                    text = "When sold, duplicates:";
+                    return true;
+                }
+
+                case "j_madness":
+                {
+                    var pool = JokersBySortId(_snap.OwnedJokers
+                        .Where(j => j.CenterKey != "j_madness" && !j.Eternal));
+                    if (pool.Count == 0)
+                    {
+                        text = "No destructible Jokers";
+                        return true;
+                    }
+                    var chosen = pool[FreshRng().ChooseIndex("madness", pool.Count)];
+                    cards = new[] { OwnedJokerCard(chosen) };
+                    text = "Next blind, destroys:";
+                    return true;
+                }
+
+                case "j_certificate":
+                {
+                    var rng = FreshRng();
+                    var cardKey = BalatroItems.CardKeys[rng.ChooseIndex("cert_fr", BalatroItems.CardKeys.Count)];
+                    var sealPoll = rng.Random("certsl");
+                    var seal = sealPoll > 0.75 ? "Red Seal"
+                        : sealPoll > 0.5 ? "Blue Seal"
+                        : sealPoll > 0.25 ? "Gold Seal"
+                        : "Purple Seal";
+                    cards = new[]
+                    {
+                        new PredictedCard
+                        {
+                            Kind = PredictedKind.PlayingCard,
+                            CenterKey = cardKey,
+                            Name = BalatroItems.CardDisplayName(cardKey),
+                            Seal = seal
+                        }
+                    };
+                    text = "At round start, adds:";
+                    return true;
+                }
+
+                case "j_marble":
+                {
+                    var cardKey = BalatroItems.CardKeys[FreshRng().ChooseIndex("marb_fr", BalatroItems.CardKeys.Count)];
+                    cards = new[]
+                    {
+                        new PredictedCard
+                        {
+                            Kind = PredictedKind.PlayingCard,
+                            CenterKey = cardKey,
+                            Name = BalatroItems.CardDisplayName(cardKey),
+                            Enhancement = "Stone Card"
+                        }
+                    };
+                    text = "Next blind, adds to deck:";
+                    return true;
+                }
+
+                case "j_8_ball":
+                    return TryPredictJokerCreation(PredictedKind.Tarot, "8ba", "Per scoring 8:", out text, out cards);
+                case "j_superposition":
+                    return TryPredictJokerCreation(PredictedKind.Tarot, "sup", "On Ace + Straight:", out text, out cards);
+                case "j_cartomancer":
+                    return TryPredictJokerCreation(PredictedKind.Tarot, "car", "When blind selected:", out text, out cards);
+                case "j_vagabond":
+                    return TryPredictJokerCreation(PredictedKind.Tarot, "vag", "Playing a hand at ≤$4:", out text, out cards);
+                case "j_seance":
+                    return TryPredictJokerCreation(PredictedKind.Spectral, "sea", "On Straight Flush:", out text, out cards);
+                case "j_sixth_sense":
+                    return TryPredictJokerCreation(PredictedKind.Spectral, "sixth", "On first-hand single 6:", out text, out cards);
+
+                case "j_riff_raff":
+                {
+                    var rng = FreshRng();
+                    var exclusions = PackExclusions();
+                    var temp = new HashSet<string>(StringComparer.Ordinal);
+                    cards = new[]
+                    {
+                        NextJoker(rng, "rif", exclusions, temp, forcedRarity: 1),
+                        NextJoker(rng, "rif", exclusions, temp, forcedRarity: 1)
+                    };
+                    text = "When blind selected:";
+                    return true;
+                }
+
+                default:
+                    return false;
+            }
+        }
+
+        private static PredictedKind KindOfConsumable(string centerKey) =>
+            BalatroItems.Tarots.Any(t => t.Key == centerKey) ? PredictedKind.Tarot
+            : BalatroItems.Planets.Any(p => p.Key == centerKey) ? PredictedKind.Planet
+            : PredictedKind.Spectral;
+
+        private bool TryPredictJokerCreation(PredictedKind kind, string source, string label,
+            out string text, out IReadOnlyList<PredictedCard> cards)
+        {
+            var rng = FreshRng();
+            cards = new[]
+            {
+                NextConsumable(rng, kind, source, PackExclusions(),
+                    new HashSet<string>(StringComparer.Ordinal), soulable: false)
+            };
+            text = label;
+            return true;
         }
 
         private bool TryPredictWheelOfFortune(out string text, out IReadOnlyList<PredictedCard> cards)

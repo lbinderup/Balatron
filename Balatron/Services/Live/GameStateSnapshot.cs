@@ -28,6 +28,24 @@ namespace Balatron.Services.Live
         public string CenterKey { get; init; }
         public string Label { get; init; }
         public string Edition { get; init; }
+        public int SortId { get; init; }
+        public bool Eternal { get; init; }
+        public bool HasEdition => !string.IsNullOrEmpty(Edition) && Edition != "None";
+    }
+
+    public sealed class OwnedConsumableInfo
+    {
+        public string CenterKey { get; init; }
+        public string Label { get; init; }
+        public int SortId { get; init; }
+    }
+
+    public sealed class HandCardInfo
+    {
+        public string CardKey { get; init; }        // e.g. "H_K"
+        public string EnhancementKey { get; init; } // c_base or m_*
+        public string Seal { get; init; }
+        public int SortId { get; init; }
     }
 
     /// <summary>
@@ -70,6 +88,8 @@ namespace Balatron.Services.Live
         public bool FirstShopBuffoonDone { get; init; }
 
         public IReadOnlyList<OwnedJokerInfo> OwnedJokers { get; init; }
+        public IReadOnlyList<OwnedConsumableInfo> OwnedConsumables { get; init; }
+        public IReadOnlyList<HandCardInfo> HandCards { get; init; }
         public int ConsumableSlots { get; init; }
         public int OwnedConsumableCount { get; init; }
         public string LastTarotPlanet { get; init; }
@@ -134,14 +154,51 @@ namespace Balatron.Services.Live
                     {
                         CenterKey = CenterKey(card),
                         Label = StringValue(Child(card, "label")?.Value),
-                        Edition = Views.LuaNodeTreeWindow.GetEditionType(card)
+                        Edition = Views.LuaNodeTreeWindow.GetEditionType(card),
+                        SortId = (int)Number(Child(card, "sort_id")?.Value),
+                        Eternal = BoolValue(Child(Child(card, "ability"), "eternal")?.Value)
                     });
                 }
             }
 
             var consumablesArea = Child(cardAreas, "consumeables");
-            var ownedConsumableCount = Child(consumablesArea, "cards")?.Children.Count ?? 0;
+            var consumableCards = Child(consumablesArea, "cards");
+            var ownedConsumables = new List<OwnedConsumableInfo>();
+            if (consumableCards != null)
+            {
+                foreach (var card in OrderedChildren(consumableCards))
+                {
+                    ownedConsumables.Add(new OwnedConsumableInfo
+                    {
+                        CenterKey = CenterKey(card),
+                        Label = StringValue(Child(card, "label")?.Value),
+                        SortId = (int)Number(Child(card, "sort_id")?.Value)
+                    });
+                }
+            }
+            var ownedConsumableCount = ownedConsumables.Count;
             var consumableSlots = (int)Number(Child(Child(consumablesArea, "config"), "card_limit")?.Value, 2);
+
+            // Effects that target "a random card in hand" pick by sort_id, so
+            // the hand has to be captured with its ids.
+            var handCards = new List<HandCardInfo>();
+            var handCardsNode = Child(Child(cardAreas, "hand"), "cards");
+            if (handCardsNode != null)
+            {
+                foreach (var card in OrderedChildren(handCardsNode))
+                {
+                    var cardKey = StringValue(Child(Child(card, "save_fields"), "card")?.Value);
+                    if (cardKey == null)
+                        continue;
+                    handCards.Add(new HandCardInfo
+                    {
+                        CardKey = cardKey,
+                        EnhancementKey = CenterKey(card),
+                        Seal = StringValue(Child(card, "seal")?.Value),
+                        SortId = (int)Number(Child(card, "sort_id")?.Value)
+                    });
+                }
+            }
 
             var shopCards = new List<ShopCardInfo>();
             var shopCardsNode = Child(Child(cardAreas, "shop_jokers"), "cards");
@@ -251,6 +308,8 @@ namespace Balatron.Services.Live
                 RentalsInShop = BoolValue(Child(modifiers, "enable_rentals_in_shop")?.Value),
                 FirstShopBuffoonDone = BoolValue(Child(game, "first_shop_buffoon")?.Value),
                 OwnedJokers = ownedJokers,
+                OwnedConsumables = ownedConsumables,
+                HandCards = handCards,
                 ConsumableSlots = consumableSlots,
                 OwnedConsumableCount = ownedConsumableCount,
                 LastTarotPlanet = StringValue(Child(game, "last_tarot_planet")?.Value),

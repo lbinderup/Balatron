@@ -21,6 +21,8 @@ namespace Balatron.Models
         public object Tooltip { get; private init; }
         public IReadOnlyList<ImageSource> SpriteLayers { get; private init; }
         public bool HasSprite => SpriteLayers is { Count: > 0 };
+        /// <summary>True when this card has a predictable random outcome worth hovering for.</summary>
+        public bool HasOutcome { get; private init; }
         public string FaceText { get; private init; }
         public string OverlayText { get; private init; }
         public Brush OverlayForeground { get; private init; }
@@ -159,6 +161,46 @@ namespace Balatron.Models
             };
         }
 
+        /// <summary>A joker you already own, with what its random effect would do next.</summary>
+        public static PeekCardViewModel FromOwnedJoker(OwnedJokerInfo info,
+            string outcomeText, IReadOnlyList<PredictedCard> outcomeCards)
+        {
+            BalatroItems.JokersByKey.TryGetValue(info.CenterKey ?? string.Empty, out var def);
+            var card = new PredictedCard
+            {
+                Kind = PredictedKind.Joker,
+                CenterKey = info.CenterKey,
+                Name = info.Label ?? def?.Name ?? info.CenterKey,
+                Text = def?.Text,
+                Rarity = def?.Rarity ?? 1,
+                Edition = NormalizeEdition(info.Edition),
+                Eternal = info.Eternal,
+                OutcomeText = outcomeText,
+                OutcomeCards = outcomeCards
+            };
+            return Joker(card, string.Join(" · ", BuildBadges(card)));
+        }
+
+        /// <summary>A consumable you already own, with what using it now would do.</summary>
+        public static PeekCardViewModel FromOwnedConsumable(OwnedConsumableInfo info,
+            string outcomeText, IReadOnlyList<PredictedCard> outcomeCards)
+        {
+            BalatroItems.ConsumablesByKey.TryGetValue(info.CenterKey ?? string.Empty, out var def);
+            var kind = BalatroItems.Tarots.Any(t => t.Key == info.CenterKey) ? PredictedKind.Tarot
+                : BalatroItems.Planets.Any(p => p.Key == info.CenterKey) ? PredictedKind.Planet
+                : PredictedKind.Spectral;
+            var card = new PredictedCard
+            {
+                Kind = kind,
+                CenterKey = info.CenterKey,
+                Name = def?.Name ?? info.Label ?? info.CenterKey,
+                Text = def?.Text,
+                OutcomeText = outcomeText,
+                OutcomeCards = outcomeCards
+            };
+            return Consumable(card, BuildBadges(card));
+        }
+
         private static PeekCardViewModel Joker(PredictedCard card, string badges, string costLabel = null)
         {
             var accent = card.Rarity switch
@@ -177,7 +219,9 @@ namespace Balatron.Models
             {
                 Title = card.Name,
                 Subtitle = string.IsNullOrEmpty(badges) ? $"{rarityName} Joker" : $"{rarityName} Joker · {badges}",
-                Body = card.Text
+                Body = card.Text,
+                OutcomeText = card.OutcomeText,
+                OutcomeCards = card.OutcomeCards?.Select(FromPrediction).ToList()
             };
 
             return new PeekCardViewModel
@@ -188,6 +232,7 @@ namespace Balatron.Models
                 Badges = badges,
                 SubText = string.Empty,
                 Tooltip = tooltip,
+                HasOutcome = tooltip.HasOutcome,
                 SpriteLayers = layers,
                 FaceText = card.Name.Length > 0 ? card.Name.Substring(0, 1) : "J",
                 Accent = accent,
@@ -224,6 +269,7 @@ namespace Balatron.Models
                 Badges = string.Join(" · ", badges),
                 SubText = sprite == null ? card.Text ?? string.Empty : string.Empty,
                 Tooltip = tooltip,
+                HasOutcome = tooltip.HasOutcome,
                 SpriteLayers = sprite != null ? new[] { sprite } : null,
                 FaceText = glyph,
                 Accent = accent,

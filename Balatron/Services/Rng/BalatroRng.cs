@@ -58,6 +58,9 @@ namespace Balatron.Services.Rng
             return (current + _hashedSeed) / 2.0;
         }
 
+        /// <summary>A generator seeded from the key, for effects that draw repeatedly (shuffles).</summary>
+        public LuaRandom Generator(string key) => new(PseudoSeed(key));
+
         /// <summary>pseudorandom(key): one uniform double in [0, 1).</summary>
         public double Random(string key) => new LuaRandom(PseudoSeed(key)).NextDouble();
 

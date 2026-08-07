@@ -57,6 +57,7 @@ namespace Balatron.Views
         private PackPeekWindow _packPeek;
         private string _packPeekKind;
 
+        public ObservableCollection<PeekCardViewModel> Owned { get; } = new();
         public ObservableCollection<PeekCardViewModel> ShopNow { get; } = new();
         public ObservableCollection<PackOfferViewModel> Packs { get; } = new();
         public ObservableCollection<RerollGroupViewModel> Rerolls { get; } = new();
@@ -65,6 +66,7 @@ namespace Balatron.Views
         private LivePeekWindow()
         {
             InitializeComponent();
+            OwnedList.ItemsSource = Owned;
             ShopNowList.ItemsSource = ShopNow;
             PacksList.ItemsSource = Packs;
             RerollsList.ItemsSource = Rerolls;
@@ -99,6 +101,19 @@ namespace Balatron.Views
                 return;
 
             var engine = new PredictionEngine(_snapshot, _profileUnlocks);
+
+            Owned.Clear();
+            foreach (var joker in _snapshot.OwnedJokers)
+            {
+                engine.TryPredictJokerOutcome(joker.CenterKey, out var jokerText, out var jokerCards);
+                Owned.Add(PeekCardViewModel.FromOwnedJoker(joker, jokerText, jokerCards));
+            }
+            foreach (var consumable in _snapshot.OwnedConsumables)
+            {
+                engine.TryPredictOutcome(consumable.CenterKey, out var useText, out var useCards);
+                Owned.Add(PeekCardViewModel.FromOwnedConsumable(consumable, useText, useCards));
+            }
+            OwnedEmptyText.Visibility = Owned.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
             ShopNow.Clear();
             foreach (var card in _snapshot.ShopCards)
